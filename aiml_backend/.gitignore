@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Environments
+venv/
+
+# Env & Secrets
+.env
+
+# Database & Vector DB
+*.db
+hbtm.db
+chroma_data/
+
+# Temporary media
+data/temp_media/
+temp_media/
+
+# Logs & OS
+*.log
+.DS_Store

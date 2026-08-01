@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+*, *::before, *::after {
+  font-family: "Outfit", sans-serif !important;
+  font-weight: 300 !important;
+}
+
+html {
+  font-size: 15px;
+}
+
+html, body {
+  font-family: "Outfit", sans-serif !important;
+  font-weight: 300 !important;
+  background-color: #08080a;
+  color: #e4e4e7;
+  margin: 0;
+  padding: 0;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Page fade-in on route change */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-fade {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.text-2xs {
+  font-size: 0.75rem;
+  line-height: 1.1rem;
+}

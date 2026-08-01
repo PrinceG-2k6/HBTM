@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { axiosInstance } from "../api/axiosClient";
 import {
   Flame, Trophy, Clock, Target, Sparkles, TrendingUp,
   ArrowRight, CheckCircle2, Circle, Zap,
@@ -106,6 +107,20 @@ const TaskRow: React.FC<{
 /* ─── Dashboard Main Component ───────────────────────────────── */
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const [isYoutubeSynced, setIsYoutubeSynced] = useState(() => {
+    return localStorage.getItem("youtube_synced") === "true";
+  });
+
+  useEffect(() => {
+    if (location.search.includes("youtube=success")) {
+      setIsYoutubeSynced(true);
+      localStorage.setItem("youtube_synced", "true");
+      // Clean up URL without triggering reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location]);
+
   const [dashboardData, setDashboardData] = useState<DashboardDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -181,8 +196,16 @@ export const DashboardPage: React.FC = () => {
           setActiveGrowthArea(starterArea);
         }
 
-        // Setup dynamic tasks based on todayMission
-        if (res?.todayMission) {
+        // Setup dynamic tasks based on dashboardData
+        if (res?.daily_tasks && Array.isArray(res.daily_tasks)) {
+          setTasks(res.daily_tasks.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            tag: t.tag || "Task",
+            time: `${t.estimated_minutes || 15} min`,
+            done: t.done || false
+          })));
+        } else if (res?.todayMission) {
           setTasks([
             {
               id: "t1",
@@ -198,8 +221,15 @@ export const DashboardPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const toggleTask = (id: string) => {
+  const toggleTask = async (id: string) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+    try {
+      await axiosInstance.post(`/daily-tasks/${id}/complete`);
+    } catch (error) {
+      console.error("Failed to toggle task", error);
+      // Revert if needed
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+    }
   };
 
   const completedCount = tasks.filter((t) => t.done).length;
@@ -272,13 +302,20 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <a
-            href={`http://localhost:8000/api/auth/youtube/login?user_id=${user?.id}`}
-            className="h-fit flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-900/50 transition-all cursor-pointer"
-          >
-            <Video size={18} />
-            Connect YouTube
-          </a>
+          {isYoutubeSynced ? (
+            <div className="h-fit flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600/20 border border-green-500/50 cursor-default">
+              <CheckCircle2 size={18} className="text-green-400" />
+              YouTube Synced
+            </div>
+          ) : (
+            <a
+              href={`http://localhost:8000/api/auth/youtube/login?user_id=${user?.id || (user as any)?._id}`}
+              className="h-fit flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-900/50 transition-all cursor-pointer"
+            >
+              <Video size={18} />
+              Connect YouTube
+            </a>
+          )}
           <Link
             to="/curation"
             className="h-fit flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-semibold text-white border-2 border-[#6D28D9] shadow-[0_0_50px_1px_#6c28d984] duration-200 hover:bg-[#6c28d95b]"
@@ -437,7 +474,7 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             <Link
-              to="/roadmap"
+              to="/curation"
               className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-purple-600 text-zinc-200 hover:text-white text-sm text-center transition-all duration-200 flex items-center justify-center gap-2"
             >
               Explore Full Roadmap Stage <ArrowRight size={14} />

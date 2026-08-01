@@ -70,6 +70,7 @@ from api.routes_ingest import router as ingest_router
 from api.routes_oauth import router as oauth_router
 from api.routes_sandbox import router as sandbox_router
 from api.routes_auth import router as auth_router
+from api.routes_profile import router as profile_router
 
 from fastapi.staticfiles import StaticFiles
 from config import BASE_DIR
@@ -83,6 +84,7 @@ app.include_router(progress_router, prefix="/api/dashboard", tags=["Progress"])
 app.include_router(ingest_router, prefix="/api", tags=["Ingestion"])
 app.include_router(oauth_router)
 app.include_router(sandbox_router)
+app.include_router(profile_router, prefix="/api", tags=["Profile"])
 
 # Mount uploads directory for audio/video playback
 uploads_path = BASE_DIR / "data" / "uploads"

@@ -14,12 +14,12 @@ from tools.youtube_tools import get_youtube_watch_history_oauth
 
 router = APIRouter(prefix="/api/auth/youtube", tags=["oauth"])
 
-# OAuth configuration (In a real app, these should be in config.py / .env)
-# Using placeholder strings since we are building exact logic but it may not have real keys yet.
-import os
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "your-client-id")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "your-client-secret")
-REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/youtube/callback")
+# OAuth configuration
+from config import (
+    YOUTUBE_OAUTH_CLIENT_ID as GOOGLE_CLIENT_ID,
+    YOUTUBE_OAUTH_CLIENT_SECRET as GOOGLE_CLIENT_SECRET,
+    YOUTUBE_OAUTH_REDIRECT_URI as REDIRECT_URI
+)
 YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly"
 
 
@@ -57,13 +57,13 @@ async def youtube_callback(
     if error:
         raise HTTPException(status_code=400, detail=f"OAuth Error: {error}")
     
-    if not code or not state:
-        raise HTTPException(status_code=400, detail="Missing code or state (user_id)")
+    if not code or not state or state == 'undefined':
+        return RedirectResponse(url="http://localhost:5173/dashboard?error=Missing+user_id")
         
     user_id = state
     user = await get_user(db, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return RedirectResponse(url="http://localhost:5173/dashboard?error=User+not+found")
 
     import httpx
     # Exchange authorization code for access token
@@ -115,12 +115,8 @@ async def youtube_callback(
     # Trigger bulk skill update using the fetched URLs
     # Limit to top 5 for performance during sync
     urls_to_sync = content_urls[:5]
-    sync_result = await update_user_skills(db, user_id, urls_to_sync)
     
-    return {
-        "status": "success",
-        "message": "YouTube watch history synced successfully!",
-        "synced_videos": len(urls_to_sync),
-        "total_history_found": len(content_urls),
-        "sync_result": sync_result
-    }
+    # We will trigger this in background or await it
+    await update_user_skills(db, user_id, urls_to_sync)
+    
+    return RedirectResponse(url="http://localhost:5173/dashboard?youtube=success")

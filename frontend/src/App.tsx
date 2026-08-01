@@ -10,10 +10,11 @@ import { CurationPage } from "./pages/CurationPage";
 import { SandboxPage } from "./pages/SandboxPage";
 import { ReviewsPage } from "./pages/ReviewsPage";
 import { AIChatPage } from "./pages/AIChatPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { WindowWidthProvider } from "./contexts/windowWidth.context";
 import { AuthProvider } from "./contexts/auth.context";
 
-const APP_PAGES = ["/dashboard", "/curation", "/sandbox", "/reviews", "/ai-chat"];
+const APP_PAGES = ["/dashboard", "/curation", "/sandbox", "/reviews", "/ai-chat", "/profile"];
 
 const ScrollToTop = () => {
   const location = useLocation();
@@ -57,6 +58,7 @@ const AppContent = () => {
           <Route path="/sandbox" element={<SandboxPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/ai-chat" element={<AIChatPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
     </div>

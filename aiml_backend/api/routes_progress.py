@@ -24,6 +24,36 @@ async def api_get_progress(user_id: str, db: AsyncSession = Depends(get_db)):
     return result
 
 
+import uuid
+
+def generate_daily_tasks(skills, aspiration_text):
+    if not skills:
+        return []
+        
+    tasks = []
+    templates = [
+        "Watch a 10-min video on {skill}",
+        "Read an article about {skill}",
+        "Practice {skill} for 15 minutes",
+        "Reflect on your progress in {skill}",
+        "Journal about how {skill} connects to your aspiration"
+    ]
+    
+    for i in range(min(5, len(skills))):
+        skill_name = skills[i]['skill_name']
+        template = templates[i % len(templates)]
+        title = template.format(skill=skill_name)
+        
+        tasks.append({
+            "id": str(uuid.uuid4()),
+            "title": title,
+            "tag": skill_name,
+            "estimated_minutes": 15,
+            "done": False
+        })
+        
+    return tasks
+
 from api.routes_auth import get_current_user
 from db.models import User
 
@@ -105,15 +135,7 @@ async def api_get_dashboard(current_user: User = Depends(get_current_user), db: 
         "topicProgress": []
       },
       "roadmapStages": [],
-      "todayMission": {
-        "taskTitle": "Daily Check-in",
-        "taskType": "Reflection",
-        "estimatedMinutes": 5,
-        "reward": "+10 XP",
-        "nextMilestone": next_ms,
-        "progressPercent": 100,
-        "route": "/sandbox"
-      },
+      "daily_tasks": generate_daily_tasks(progress.get('skills', []), current_user.aspiration_text),
       "aiCoach": {
         "message": "I noticed you're progressing well! Let's tackle a new challenge today.",
         "focusTopic": "Skill Development",

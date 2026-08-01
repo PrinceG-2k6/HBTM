@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Sparkles, Video, Book, Headphones, ExternalLink } from "lucide-react";
+import { Sparkles, Video, Book, Headphones, ExternalLink, CheckCircle } from "lucide-react";
 import { Card } from "../components/ui/Card";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import { curationApi } from "../api";
@@ -7,10 +7,31 @@ import { curationApi } from "../api";
 export const CurationPage: React.FC = () => {
   const [feed, setFeed] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [completedUrls, setCompletedUrls] = useState<Set<string>>(new Set());
+
+  const handleComplete = async (e: React.MouseEvent, item: any) => {
+    e.preventDefault(); // prevent opening link
+    e.stopPropagation();
+    try {
+      await curationApi.markContentComplete({
+        url: item.url,
+        title: item.title,
+        content_type: item.content_type,
+        platform: item.platform || "unknown",
+        skill_name: item.matched_skill || item.skill_name
+      });
+      setCompletedUrls(prev => new Set(prev).add(item.url));
+    } catch (err) {
+      console.error("Failed to mark as complete", err);
+    }
+  };
 
   useEffect(() => {
     curationApi.getFeed().then((res) => {
       setFeed(res);
+      if (res.completed_urls) {
+        setCompletedUrls(new Set(res.completed_urls));
+      }
     }).catch(console.error).finally(() => setLoading(false));
   }, []);
 
@@ -61,7 +82,7 @@ export const CurationPage: React.FC = () => {
                         rel="noopener noreferrer"
                         className="block group"
                       >
-                        <Card className="flex flex-col h-full bg-zinc-900/40 backdrop-blur-xl border border-white/5 overflow-hidden group-hover:border-purple-500/30 transition-all">
+                        <Card className={`flex flex-col h-full bg-zinc-900/40 backdrop-blur-xl border border-white/5 overflow-hidden transition-all ${completedUrls.has(item.url) ? "opacity-60 border-emerald-500/30" : "group-hover:border-purple-500/30"}`}>
                           {/* Image / Thumbnail placeholder */}
                           <div className="h-40 bg-zinc-800/80 relative">
                             {isVideo && item.url.includes('v=') ? (
@@ -101,7 +122,18 @@ export const CurationPage: React.FC = () => {
                             </p>
                             
                             <div className="mt-6 flex justify-between items-center pt-4 border-t border-white/5">
-                              <span className="text-xs text-zinc-500 capitalize">Relevance: {item.relevance_score ? Math.round(item.relevance_score * 100) + '%' : 'High'}</span>
+                              {completedUrls.has(item.url) ? (
+                                <span className="flex items-center gap-1.5 text-sm text-emerald-400 font-medium">
+                                  <CheckCircle size={16} /> Completed
+                                </span>
+                              ) : (
+                                <button 
+                                  onClick={(e) => handleComplete(e, item)}
+                                  className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-emerald-400 transition-colors font-medium z-10 relative cursor-pointer"
+                                >
+                                  <CheckCircle size={16} /> Mark as Complete
+                                </button>
+                              )}
                               <span className="flex items-center gap-1.5 text-sm text-purple-400 group-hover:text-purple-300 font-medium">
                                 View Source <ExternalLink size={14} />
                               </span>

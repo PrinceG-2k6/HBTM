@@ -83,24 +83,24 @@ export const apiService = {
     const res = await axiosInstance.get("/dashboard");
     return res.data;
   },
-  getProfile: async (): Promise<LearnerProfile> => {
+  getProfile: async () => {
     const res = await axiosInstance.get("/profile");
     return res.data;
   },
-  updateProfile: async (updates: Partial<LearnerProfile>): Promise<LearnerProfile> => {
-    const res = await axiosInstance.put("/profile", updates);
+  updateProfile: async (data: { name?: string; aspiration_text?: string; avatar_url?: string }) => {
+    const res = await axiosInstance.put("/profile", data);
     return res.data;
   },
-  getRoadmap: async () => {
-    const res = await axiosInstance.get("/roadmap");
+  addSkill: async (skill_name: string) => {
+    const res = await axiosInstance.post("/profile/skills", { skill_name });
+    return res.data;
+  },
+  removeSkill: async (skillId: string) => {
+    const res = await axiosInstance.delete(`/profile/skills/${skillId}`);
     return res.data;
   },
   getRoadmapData: async (): Promise<RoadmapDataResponse> => {
     const res = await axiosInstance.get("/roadmap");
-    return res.data;
-  },
-  getAnalysis: async () => {
-    const res = await axiosInstance.get("/analysis");
     return res.data;
   },
   getCognitiveAnalysis: async () => {
@@ -111,20 +111,12 @@ export const apiService = {
     const res = await axiosInstance.get("/insights");
     return res.data;
   },
-  getMemory: async (): Promise<MemoryVector[]> => {
-    const res = await axiosInstance.get("/memory");
-    return res.data;
-  },
   getLearnerMemory: async (): Promise<MemoryVector[]> => {
     const res = await axiosInstance.get("/memory");
     return res.data;
   },
   addMemoryVector: async (vector: any) => {
     const res = await axiosInstance.post("/memory", vector);
-    return res.data;
-  },
-  getVisualizer: async (): Promise<VisualizerConcept[]> => {
-    const res = await axiosInstance.get("/visualizer");
     return res.data;
   },
   getVisualizerNotes: async (): Promise<VisualizerConcept[]> => {

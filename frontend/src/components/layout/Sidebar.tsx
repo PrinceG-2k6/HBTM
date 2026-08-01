@@ -3,7 +3,7 @@ import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, LineChart, FlaskConical, User2,
   Briefcase, Trophy, LogOut, ChevronLeft, ChevronRight,
-  Sparkles, Settings, Bot, Menu, X, MoreHorizontal
+  Sparkles, Settings, Bot, Menu, X, MoreHorizontal, MessageCircle
 } from "lucide-react";
 import { useAuth } from "../../contexts/auth.context";
 
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { icon: FlaskConical, label: "Curation Feed", shortLabel: "Curation", path: "/curation" },
   { icon: LineChart, label: "Skill Sandbox", shortLabel: "Sandbox", path: "/sandbox" },
   { icon: User2, label: "Peer Reviews", shortLabel: "Reviews", path: "/reviews" },
+  { icon: MessageCircle, label: "AI Coach", shortLabel: "AI Coach", path: "/ai-chat" },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -108,15 +109,16 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom Account Section */}
         <div className="p-2 space-y-2 border-t border-white/5">
-          <button
+          <Link
+            to="/profile"
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-gray-300 hover:text-zinc-100 hover:bg-white/[0.04] transition-all overflow-hidden whitespace-nowrap cursor-pointer"
           >
             <Settings size={18} className="flex-shrink-0 text-gray-300" />
             {!collapsed && <span>Settings</span>}
-          </button>
+          </Link>
 
           {/* User Card */}
-          <Link to="/dashboard" className="flex items-center gap-3 p-1 rounded-2xl bg-zinc-900/60 overflow-hidden hover:bg-zinc-800 transition-colors">
+          <Link to="/profile" className="flex items-center gap-3 p-1 rounded-2xl bg-zinc-900/60 overflow-hidden hover:bg-zinc-800 transition-colors">
             <div
               className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-white"
               style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}
@@ -255,7 +257,7 @@ export const Sidebar: React.FC = () => {
 
           {/* User Account & Logout */}
           <div className="pt-6 space-y-3 border-t border-white/10 mt-6">
-            <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 transition-colors">
+            <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 transition-colors">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shadow-md"
                 style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}

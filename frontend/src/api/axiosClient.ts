@@ -102,4 +102,8 @@ export const curationApi = {
     const res = await axiosInstance.get("/curation/feed");
     return res.data;
   },
+  markContentComplete: async (data: { url: string; title: string; content_type: string; platform: string; skill_name?: string }) => {
+    const res = await axiosInstance.post("/curation/complete", data);
+    return res.data;
+  },
 };

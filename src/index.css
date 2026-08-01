@@ -5,6 +5,10 @@
   font-weight: 300 !important;
 }
 
+html {
+  font-size: 15px;
+}
+
 html, body {
   font-family: "Outfit", sans-serif !important;
   font-weight: 300 !important;
@@ -35,6 +39,6 @@ html, body {
 }
 
 .text-2xs {
-  font-size: 0.65rem;
-  line-height: 1rem;
+  font-size: 0.75rem;
+  line-height: 1.1rem;
 }

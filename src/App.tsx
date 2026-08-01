@@ -24,7 +24,7 @@ const ScrollToTop = () => {
 };
 
 const AppContent = () => (
-  <div className="w-full min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-zinc-100 font-sans antialiased selection:bg-amber-400 selection:text-amber-950">
+  <div className="w-full min-h-screen bg-black text-zinc-100 font-sans antialiased selection:bg-amber-400 selection:text-amber-950">
     <Header />
     <main className="px-3 sm:px-6 pt-24 pb-12">
       <ScrollToTop />

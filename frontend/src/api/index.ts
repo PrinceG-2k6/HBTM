@@ -159,4 +159,8 @@ export const apiService = {
     const res = await axiosInstance.put("/learning-profile/preferences", preferences);
     return res.data;
   },
+  sendAIChat: async (payload: { prompt: string; hasImage?: boolean; imageBase64?: string }) => {
+    const res = await axiosInstance.post("/chat", payload);
+    return res.data;
+  },
 };

@@ -13,10 +13,11 @@ import { LearningLabPage } from "./pages/LearningLabPage";
 import { FutureSelfPage } from "./pages/FutureSelfPage";
 import { OpportunitiesPage } from "./pages/OpportunitiesPage";
 import { AchievementsPage } from "./pages/AchievementsPage";
+import { AIChatPage } from "./pages/AIChatPage";
 import { WindowWidthProvider } from "./contexts/windowWidth.context";
 import { AuthProvider } from "./contexts/auth.context";
 
-const APP_PAGES = ["/dashboard", "/roadmap", "/insights", "/analysis", "/learning-profile", "/memory", "/learning-lab", "/visualizer", "/future-self", "/opportunities", "/achievements"];
+const APP_PAGES = ["/dashboard", "/ai-chat", "/roadmap", "/insights", "/analysis", "/learning-profile", "/memory", "/learning-lab", "/visualizer", "/future-self", "/opportunities", "/achievements"];
 
 const ScrollToTop = () => {
   const location = useLocation();
@@ -57,6 +58,7 @@ const AppContent = () => {
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/ai-chat" element={<AIChatPage />} />
           <Route path="/roadmap" element={<RoadmapPage />} />
           <Route path="/insights" element={<InsightsPage />} />
           <Route path="/analysis" element={<InsightsPage />} />

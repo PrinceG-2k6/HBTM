@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Flame, Trophy, Clock, Target, Sparkles, TrendingUp,
-  ArrowRight, CheckCircle2, Circle, BookOpen, Zap,
-  ChevronRight, Play, BarChart2
+  ArrowRight, CheckCircle2, Circle, Zap,
+  ChevronRight, Play, BarChart2, BookMarked, Video,
+  Headphones, CheckSquare
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
@@ -12,44 +13,63 @@ import {
 import { TopicBubbleChart } from "../components/charts/TopicBubbleChart";
 import { useAuth } from "../contexts/auth.context";
 import { apiService } from "../api";
-import type { DashboardDataResponse, TopicProgress } from "../api";
+import type { DashboardDataResponse } from "../api";
+import { DUMMY_GROWTH_AREAS, type DummyGrowthAreaTopic } from "../data/dummyGrowthAreas";
 
-/* ─── helpers ─────────────────────────────────────────────────── */
-const greet = () => {
+/* ─── Greeting Helper ────────────────────────────────────────── */
+const getGreeting = () => {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
   return "Good evening";
 };
 
-const StatCard: React.FC<{
+/* ─── Borderless Stat Card Component ─────────────────────────── */
+const BorderlessStatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
   value: string | number;
-  sub?: string;
-  accent?: string;
-}> = ({ icon, label, value, sub, accent = "#a855f7" }) => (
+  sub: string;
+  badge?: string;
+  gradient: string;
+  accentColor: string;
+}> = ({ icon, label, value, sub, badge, gradient, accentColor }) => (
   <div
-    className="rounded-2xl p-5 flex flex-col gap-3"
-    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+    className="relative overflow-hidden rounded-3xl p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl shadow-xl group"
+    style={{ background: gradient }}
   >
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-zinc-500 tracking-wide uppercase">{label}</span>
+    {/* Subtle ambient glow effect */}
+    <div
+      className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-3xl opacity-25 transition-opacity group-hover:opacity-45"
+      style={{ background: accentColor }}
+    />
+
+    <div className="flex items-center justify-between mb-4">
+      <span className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">{label}</span>
       <div
-        className="w-8 h-8 rounded-xl flex items-center justify-center"
-        style={{ background: `${accent}18` }}
+        className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg"
+        style={{ background: "rgba(255,255,255,0.06)" }}
       >
-        <span style={{ color: accent }}>{icon}</span>
+        <span style={{ color: accentColor }}>{icon}</span>
       </div>
     </div>
-    <div>
-      <p className="text-2xl font-semibold text-white">{value}</p>
-      {sub && <p className="text-xs text-zinc-500 mt-1">{sub}</p>}
+
+    <div className="flex items-baseline justify-between">
+      <div>
+        <p className="text-3xl font-extrabold text-white tracking-tight">{value}</p>
+        <p className="text-xs text-zinc-400 mt-1 font-medium">{sub}</p>
+      </div>
+      {badge && (
+        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400">
+          {badge}
+        </span>
+      )}
     </div>
   </div>
 );
 
-const TaskItem: React.FC<{
+/* ─── Task Item ──────────────────────────────────────────────── */
+const TaskRow: React.FC<{
   title: string;
   done: boolean;
   tag: string;
@@ -57,379 +77,418 @@ const TaskItem: React.FC<{
   onToggle: () => void;
 }> = ({ title, done, tag, time, onToggle }) => (
   <div
-    className="flex items-start gap-3 py-3 border-b last:border-0 border-white/5 cursor-pointer group"
     onClick={onToggle}
+    className="flex items-center justify-between p-4 rounded-2xl bg-zinc-900/40 hover:bg-zinc-800/40 cursor-pointer transition-all duration-200 group"
   >
-    <button className="mt-0.5 flex-shrink-0">
-      {done
-        ? <CheckCircle2 size={16} className="text-purple-400" />
-        : <Circle size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-      }
-    </button>
-    <div className="flex-1 min-w-0">
-      <p className={`text-sm ${done ? "line-through text-zinc-600" : "text-zinc-200"}`}>{title}</p>
-      <div className="flex items-center gap-2 mt-1">
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400">{tag}</span>
-        <span className="text-[10px] text-zinc-600 flex items-center gap-1">
-          <Clock size={10} />{time}
-        </span>
+    <div className="flex items-center gap-3.5 min-w-0">
+      <button className="flex-shrink-0 transition-transform group-hover:scale-110">
+        {done ? (
+          <CheckCircle2 size={20} className="text-purple-400 fill-purple-400/20" />
+        ) : (
+          <Circle size={20} className="text-zinc-600 group-hover:text-zinc-400" />
+        )}
+      </button>
+      <div className="min-w-0">
+        <p className={`text-sm font-medium ${done ? "line-through text-zinc-500" : "text-zinc-200"}`}>
+          {title}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300">
+            {tag}
+          </span>
+          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+            <Clock size={11} /> {time}
+          </span>
+        </div>
       </div>
     </div>
+    <ChevronRight size={16} className="text-zinc-600 group-hover:text-zinc-300 transition-colors shrink-0" />
   </div>
 );
 
-/* ─── recommendations per aspiration domain ───────────────────── */
-const DOMAIN_RECS: Record<string, string[]> = {
-  "Career & Wealth": [
-    "Read: The Psychology of Money",
-    "Watch: 10-min compound interest visualization",
-    "Practice: Update your LinkedIn for visibility",
-  ],
-  "Mindset & Peace": [
-    "Listen: Huberman Lab – Stress inoculation",
-    "Practice: 4-7-8 breathing for 5 min",
-    "Read: Viktor Frankl – Man's Search for Meaning (ch.1)",
-  ],
-  "Health & Vitality": [
-    "Move: 20-min Zone 2 cardio today",
-    "Eat: Add one high-protein meal",
-    "Sleep: Set wind-down alarm 30 min before bed",
-  ],
-  "Creative Expression": [
-    "Create: Sketch one idea with no rules",
-    "Listen: Creative Pep Talk podcast",
-    "Challenge: Write 200 words of anything",
-  ],
-  "Relationships & Social": [
-    "Reach out: Send a message to one person you admire",
-    "Read: The Art of Asking Good Questions",
-    "Practice: Active listening in your next 3 conversations",
-  ],
-};
-
-/* ─── Main Dashboard ──────────────────────────────────────────── */
+/* ─── Dashboard Main Component ───────────────────────────────── */
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
-  const [data, setData] = useState<DashboardDataResponse | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Growth area selection state for hover & interactive details
+  const [activeGrowthArea, setActiveGrowthArea] = useState<DummyGrowthAreaTopic>(DUMMY_GROWTH_AREAS[0]);
+
+  // Daily Tasks
   const [tasks, setTasks] = useState([
-    { id: "1", title: "Complete today's focus session", tag: "Focus", time: "20 min", done: false },
-    { id: "2", title: "Review roadmap progress", tag: "Roadmap", time: "5 min", done: false },
-    { id: "3", title: "Log one reflection note", tag: "Reflection", time: "3 min", done: true },
-    { id: "4", title: "Read 10 pages of current book", tag: "Reading", time: "15 min", done: false },
+    { id: "t1", title: "Complete 25m Focus Block on System Architecture", tag: "System Design", time: "25 min", done: true },
+    { id: "t2", title: "Review Huberman Lab Protocol for Deep Focus", tag: "Mindset", time: "15 min", done: false },
+    { id: "t3", title: "Log Daily Cognitive Reflection Note", tag: "Reflection", time: "5 min", done: false },
+    { id: "t4", title: "Execute 1 TypeScript Generic Types Exercise", tag: "Code Mastery", time: "20 min", done: false },
   ]);
 
-  const [hoveredBubbleTopic, setHoveredBubbleTopic] = useState<string | null>(null);
-
   useEffect(() => {
-    apiService.getDashboardData()
-      .then(setData)
+    apiService
+      .getDashboardData()
+      .then((res) => {
+        setDashboardData(res);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
-
-    // Track login time to backend
-    apiService.getDashboardData().catch(() => null);
   }, []);
 
-  const toggleTask = (id: string) =>
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  const toggleTask = (id: string) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  };
 
-  const completedCount = tasks.filter(t => t.done).length;
-  const streak = data?.learningConsistency?.bestStreak ?? 7;
-  const weeklyHours = data?.learningConsistency?.weeklyHours ?? 4.5;
+  const completedCount = tasks.filter((t) => t.done).length;
+  const streak = dashboardData?.learningConsistency?.bestStreak ?? 7;
+  const weeklyHours = dashboardData?.learningConsistency?.weeklyHours ?? 5.2;
 
-  const aspirationDomains: string[] = user?.onboarding?.aspirationFocus?.length
-    ? user.onboarding.aspirationFocus
-    : ["Career & Wealth", "Mindset & Peace"];
+  // Handle Bubble Chart Hover
+  const handleTopicHover = (topicName: string | null) => {
+    if (!topicName) return;
+    const found = DUMMY_GROWTH_AREAS.find(
+      (g) => g.name.toLowerCase() === topicName.toLowerCase()
+    );
+    if (found) {
+      setActiveGrowthArea(found);
+    }
+  };
 
-  // Build topics from user onboarding domains OR backend data
-  const bubbleTopics: TopicProgress[] = data?.metrics?.topicProgress?.length
-    ? data.metrics.topicProgress
-    : aspirationDomains.map((d, i) => ({
-        id: `topic-${i}`,
-        name: d,
-        category: d,
-        nodeState: (["Exploring", "Learning", "Practicing", "Applying"] as const)[i % 4],
-        completedPercent: [25, 45, 60, 30, 80][i % 5],
-        completedItems: i + 2,
-        totalItems: (i + 2) * 2,
-        timeInvested: 2 + i * 1.5,
-        confidenceLevel: [40, 55, 70, 35, 85][i % 5],
-        isIdentityLevel: i === 0,
-        recentlyActive: i < 2,
-        lastActive: new Date().toISOString(),
-        dependencies: [],
-        relatedStageId: `s${i + 1}`,
-        aiRecommendation: (DOMAIN_RECS[d] || ["Keep exploring this area"])[0],
-      }));
-
-  // Weekly activity data
-  const weeklyData = data?.metrics?.dailyFocusLogs ?? [
-    { day: "Mon", mindfulHours: 1.2, intentionality: 72 },
-    { day: "Tue", mindfulHours: 2.5, intentionality: 85 },
-    { day: "Wed", mindfulHours: 0.8, intentionality: 60 },
-    { day: "Thu", mindfulHours: 3.1, intentionality: 91 },
-    { day: "Fri", mindfulHours: 2.0, intentionality: 78 },
-    { day: "Sat", mindfulHours: 1.5, intentionality: 68 },
-    { day: "Sun", mindfulHours: 0.5, intentionality: 50 },
+  // Weekly focus log chart data
+  const weeklyLogs = dashboardData?.metrics?.dailyFocusLogs ?? [
+    { day: "Mon", mindfulHours: 1.5, intentionality: 75 },
+    { day: "Tue", mindfulHours: 2.8, intentionality: 88 },
+    { day: "Wed", mindfulHours: 1.2, intentionality: 68 },
+    { day: "Thu", mindfulHours: 3.4, intentionality: 94 },
+    { day: "Fri", mindfulHours: 2.4, intentionality: 82 },
+    { day: "Sat", mindfulHours: 1.8, intentionality: 76 },
+    { day: "Sun", mindfulHours: 0.9, intentionality: 62 },
   ];
 
-  // Streak data (last 7 days login presence)
-  const streakData = [
+  // 7-day login streak visualization
+  const streakDays = [
     { day: "M", active: true },
     { day: "T", active: true },
-    { day: "W", active: false },
+    { day: "W", active: true },
     { day: "T", active: true },
     { day: "F", active: true },
     { day: "S", active: true },
     { day: "S", active: false },
   ];
 
-  // Recommendations for hovered bubble
-  const hoveredRecs = hoveredBubbleTopic
-    ? (DOMAIN_RECS[hoveredBubbleTopic] || ["Keep exploring this area", "Set a 15-min daily goal"])
-    : null;
-
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-10 w-64 rounded-xl bg-zinc-800/50" />
-        <div className="grid grid-cols-4 gap-4">
+      <div className="w-full max-w-7xl mx-auto space-y-6 animate-pulse p-4">
+        <div className="h-12 w-72 rounded-2xl bg-zinc-900/60" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-zinc-800/40" />
+            <div key={i} className="h-32 rounded-3xl bg-zinc-900/50" />
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 h-96 rounded-2xl bg-zinc-800/40" />
-          <div className="h-96 rounded-2xl bg-zinc-800/40" />
-        </div>
+        <div className="h-96 rounded-3xl bg-zinc-900/50" />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-7">
-
-      {/* ── Header Greeting ─────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+    <div className="w-full max-w-7xl mx-auto space-y-8 pb-12">
+      {/* ── Top Header Greeting ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs text-zinc-500 mb-1">{greet()}</p>
-          <h1 className="text-2xl font-semibold text-white">
-            {user?.name ? `${user.name.split(" ")[0]}` : "Learner"} 👋
+          <span className="text-xs font-semibold text-purple-400 tracking-wider uppercase block mb-1">
+            {getGreeting()}
+          </span>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">
+            {user?.name ? user.name.split(" ")[0] : "Growth Aspirant"} ✨
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
-            You're on a <span className="text-purple-400 font-medium">{streak}-day streak</span>. Keep the momentum.
+            Your identity curation algorithm is active. Current streak:{" "}
+            <span className="text-purple-300 font-semibold">{streak} Days</span>.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-3">
           <Link
-            to="/roadmap"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white cursor-pointer transition-all"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)" }}
+            to="/learning-lab"
+            className="flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-105"
+            style={{
+              background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+              boxShadow: "0 10px 25px -5px rgba(139, 92, 246, 0.4)",
+            }}
           >
-            <Sparkles size={15} />
-            View Roadmap
+            <Play size={16} className="fill-white" />
+            Resume Learning
           </Link>
         </div>
       </div>
 
-      {/* ── Stat Cards ──────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          icon={<Flame size={16} />}
-          label="Day Streak"
-          value={`${streak} days`}
-          sub="Best streak yet!"
-          accent="#f97316"
+      {/* ── Top Stats Row (Borderless Glass Cards) ────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        <BorderlessStatCard
+          icon={<Flame size={20} />}
+          label="Active Streak"
+          value={`${streak} Days`}
+          sub="Personal record"
+          badge="🔥 Hot"
+          gradient="linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(20,20,30,0.6) 100%)"
+          accentColor="#f97316"
         />
-        <StatCard
-          icon={<Clock size={16} />}
-          label="This Week"
-          value={`${weeklyHours}h`}
-          sub="Time invested"
-          accent="#a855f7"
+        <BorderlessStatCard
+          icon={<Clock size={20} />}
+          label="Weekly Focus"
+          value={`${weeklyHours} hrs`}
+          sub="12% vs last week"
+          badge="+0.8h"
+          gradient="linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(20,20,30,0.6) 100%)"
+          accentColor="#a855f7"
         />
-        <StatCard
-          icon={<Target size={16} />}
-          label="Today's Tasks"
+        <BorderlessStatCard
+          icon={<Target size={20} />}
+          label="Daily Intent"
           value={`${completedCount}/${tasks.length}`}
-          sub="Completed"
-          accent="#10b981"
+          sub="Missions finished"
+          gradient="linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(20,20,30,0.6) 100%)"
+          accentColor="#10b981"
         />
-        <StatCard
-          icon={<TrendingUp size={16} />}
-          label="Growth Score"
-          value={`${data?.profile?.humanPotentialBreakdown?.total ?? 72}%`}
-          sub="Potential unlocked"
-          accent="#f59e0b"
+        <BorderlessStatCard
+          icon={<TrendingUp size={20} />}
+          label="Growth Potential"
+          value={`${dashboardData?.profile?.humanPotentialBreakdown?.total ?? 84}%`}
+          sub="Identity Alignment"
+          badge="Top 5%"
+          gradient="linear-gradient(135deg, rgba(236,72,153,0.12) 0%, rgba(20,20,30,0.6) 100%)"
+          accentColor="#ec4899"
         />
       </div>
 
-      {/* ── Main 2-col grid ─────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── Left: Bubble Chart ──────────────────────────── */}
-        <div
-          className="lg:col-span-2 rounded-2xl p-5"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base font-medium text-white">Growth Areas</h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Hover a bubble for personalized recommendations</p>
+      {/* ── Main Growth Areas Bubble Section ───────────────────── */}
+      <div className="rounded-3xl p-7 bg-zinc-900/40 backdrop-blur-2xl shadow-2xl space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-purple-400" />
+              <h2 className="text-xl font-bold text-white tracking-wide">
+                Interactive Growth Areas
+              </h2>
             </div>
-            <Link to="/insights" className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
-              Full analysis <ArrowRight size={12} />
-            </Link>
+            <p className="text-xs text-zinc-400 mt-1">
+              Hover over any growth bubble node to view live topic details & curated recommendations.
+            </p>
           </div>
 
-          {/* Bubble chart with hover→recs */}
-          <div className="relative">
-            <TopicBubbleChart
-              topics={bubbleTopics}
-              onTopicHover={setHoveredBubbleTopic}
-            />
-
-            {/* Recommendations panel shown on hover */}
-            {hoveredRecs && hoveredBubbleTopic && (
-              <div
-                className="absolute top-3 right-3 rounded-xl p-4 max-w-[200px] text-xs space-y-2 z-30 transition-all"
-                style={{
-                  background: "rgba(10,10,15,0.95)",
-                  border: "1px solid rgba(168,85,247,0.3)",
-                  backdropFilter: "blur(16px)"
-                }}
-              >
-                <p className="text-purple-300 font-medium mb-2 flex items-center gap-1">
-                  <Zap size={12} /> {hoveredBubbleTopic}
-                </p>
-                {hoveredRecs.map((r, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-zinc-400">
-                    <ChevronRight size={10} className="mt-0.5 text-purple-500 flex-shrink-0" />
-                    <span>{r}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Active Area Pill Badge */}
+          <div className="flex items-center gap-3 bg-purple-950/40 px-4 py-2 rounded-2xl self-start md:self-auto">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_10px_#a855f7]" />
+            <span className="text-xs font-semibold text-purple-200">
+              Active: {activeGrowthArea.name} (+{activeGrowthArea.growthRate}% Growth)
+            </span>
           </div>
         </div>
 
-        {/* ── Right: Tasks + Streak ───────────────────────── */}
-        <div className="space-y-5">
+        {/* 2-Column Grid: Bubble Chart + Interactive Recommendations Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left: Physics Bubble Canvas (Col 7) */}
+          <div className="lg:col-span-7 rounded-2xl bg-black/40 p-4 min-h-[400px]">
+            <TopicBubbleChart
+              topics={DUMMY_GROWTH_AREAS}
+              onTopicHover={handleTopicHover}
+            />
+          </div>
 
-          {/* Streak calendar */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-medium text-white">Weekly Activity</h2>
-              <Flame size={16} className="text-orange-400" />
-            </div>
-            <div className="flex items-end gap-2 justify-between">
-              {streakData.map((d, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5">
+          {/* Right: Rich Interactive Recommendations Panel (Col 5) */}
+          <div className="lg:col-span-5 rounded-2xl bg-zinc-900/60 p-6 space-y-5 flex flex-col justify-between h-full min-h-[400px]">
+            <div className="space-y-4">
+              {/* Selected Topic Info Header */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300">
+                    {activeGrowthArea.category}
+                  </span>
+                  <h3 className="text-xl font-extrabold text-white mt-2">
+                    {activeGrowthArea.name}
+                  </h3>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-emerald-400">
+                    +{activeGrowthArea.growthRate}%
+                  </span>
+                  <p className="text-[10px] text-zinc-500 uppercase font-medium">Growth Rate</p>
+                </div>
+              </div>
+
+              {/* Progress & Stats Bar */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-zinc-400">Topic Mastery</span>
+                  <span className="text-purple-300">{activeGrowthArea.completedPercent}%</span>
+                </div>
+                <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all"
+                    className="h-full rounded-full transition-all duration-500"
                     style={{
-                      background: d.active ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.04)",
-                      border: d.active ? "1px solid rgba(168,85,247,0.4)" : "1px solid rgba(255,255,255,0.06)",
+                      width: `${activeGrowthArea.completedPercent}%`,
+                      background: "linear-gradient(90deg, #8b5cf6, #ec4899)",
                     }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-zinc-500 pt-1">
+                  <span>Time: {activeGrowthArea.timeInvested}h</span>
+                  <span>Confidence: {activeGrowthArea.confidenceLevel}%</span>
+                  <span>State: {activeGrowthArea.nodeState}</span>
+                </div>
+              </div>
+
+              {/* Curated Recommendations List */}
+              <div className="space-y-3 pt-3">
+                <p className="text-xs font-bold text-zinc-300 tracking-wider uppercase flex items-center gap-1.5">
+                  <Zap size={14} className="text-purple-400" /> Curated Growth Resources
+                </p>
+
+                {activeGrowthArea.recommendations.map((rec, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-2xl bg-zinc-950/60 hover:bg-purple-950/30 transition-all duration-200 group cursor-pointer"
                   >
-                    {d.active && <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {rec.type === "Book" && <BookMarked size={14} className="text-amber-400" />}
+                        {rec.type === "Video" && <Video size={14} className="text-rose-400" />}
+                        {rec.type === "Podcast" && <Headphones size={14} className="text-sky-400" />}
+                        {rec.type === "Action" && <CheckSquare size={14} className="text-emerald-400" />}
+                        <span className="text-xs font-bold text-zinc-200 group-hover:text-purple-300">
+                          {rec.title}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-zinc-500 shrink-0 font-medium">{rec.duration}</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1 pl-5 leading-relaxed">
+                      {rec.description}
+                    </p>
                   </div>
-                  <span className="text-[10px] text-zinc-600">{d.day}</span>
+                ))}
+              </div>
+            </div>
+
+            <Link
+              to="/roadmap"
+              className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-purple-600 text-zinc-200 hover:text-white text-xs font-bold text-center transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              Explore Full Roadmap Stage <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Middle Section: Tasks & Weekly Streak ───────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Today's Tasks List (Col 7) */}
+        <div className="lg:col-span-7 rounded-3xl p-6 bg-zinc-900/40 backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-white">Today's Focus Missions</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                {completedCount} of {tasks.length} tasks completed today
+              </p>
+            </div>
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-purple-500/15 text-purple-300">
+              {Math.round((completedCount / tasks.length) * 100)}% Done
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {tasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                title={task.title}
+                done={task.done}
+                tag={task.tag}
+                time={task.time}
+                onToggle={() => toggleTask(task.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Weekly Streak Calendar & Login Presence (Col 5) */}
+        <div className="lg:col-span-5 rounded-3xl p-6 bg-zinc-900/40 backdrop-blur-2xl shadow-xl flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Flame size={18} className="text-orange-400" /> Weekly Presence Log
+              </h3>
+              <span className="text-xs font-bold text-emerald-400">6/7 Active</span>
+            </div>
+            <p className="text-xs text-zinc-400 mb-4">
+              Your daily logins and active time are recorded in the database.
+            </p>
+
+            <div className="grid grid-cols-7 gap-2 my-4">
+              {streakDays.map((d, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-2">
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-bold transition-all ${
+                      d.active
+                        ? "bg-purple-600/30 text-purple-300 shadow-md shadow-purple-900/40"
+                        : "bg-zinc-800/40 text-zinc-600"
+                    }`}
+                  >
+                    {d.active ? "✓" : "–"}
+                  </div>
+                  <span className="text-[11px] font-semibold text-zinc-500">{d.day}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Today's tasks */}
-          <div
-            className="rounded-2xl p-5 flex-1"
-            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-base font-medium text-white">Today's Tasks</h2>
-              <span className="text-xs text-zinc-500">{completedCount}/{tasks.length}</span>
-            </div>
-            {/* Progress bar */}
-            <div className="w-full h-1 rounded-full bg-zinc-800 mb-4">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${(completedCount / tasks.length) * 100}%`,
-                  background: "linear-gradient(90deg, #7c3aed, #db2777)"
-                }}
-              />
-            </div>
-            <div>
-              {tasks.map(t => (
-                <TaskItem
-                  key={t.id}
-                  title={t.title}
-                  done={t.done}
-                  tag={t.tag}
-                  time={t.time}
-                  onToggle={() => toggleTask(t.id)}
-                />
-              ))}
-            </div>
+          <div className="p-4 rounded-2xl bg-purple-950/20 space-y-1">
+            <p className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+              <Trophy size={14} className="text-amber-400" /> Consistency Milestone
+            </p>
+            <p className="text-xs text-zinc-400">
+              Maintaining 5+ active days per week accelerates identity adaptation by 2.4x.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ── Bottom: Charts row ──────────────────────────────── */}
+      {/* ── Bottom Section: Day vs Time Focus Chart & Intentionality ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        {/* Day vs Time bar chart */}
-        <div
-          className="rounded-2xl p-5"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="flex items-center justify-between mb-4">
+        {/* Day vs Time Chart */}
+        <div className="rounded-3xl p-6 bg-zinc-900/40 backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-medium text-white">Daily Focus Time</h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Hours per day this week</p>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <BarChart2 size={18} className="text-purple-400" /> Day vs Time Log
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">Hours spent per day this week</p>
             </div>
-            <BarChart2 size={16} className="text-zinc-500" />
+            <span className="text-xs font-mono text-zinc-400">Total: {weeklyHours}h</span>
           </div>
-          <div className="h-44">
+
+          <div className="h-48 pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                <XAxis
-                  dataKey="day"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#52525b", fontSize: 11 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#52525b", fontSize: 11 }}
-                />
+              <BarChart data={weeklyLogs} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} />
                 <Tooltip
-                  cursor={{ fill: "rgba(168,85,247,0.05)" }}
+                  cursor={{ fill: "rgba(168,85,247,0.06)" }}
                   content={({ active, payload }) => {
                     if (active && payload?.length) {
-                      const d = payload[0].payload;
+                      const item = payload[0].payload;
                       return (
-                        <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs">
-                          <p className="text-zinc-300">{d.day}</p>
-                          <p className="text-purple-300">{d.mindfulHours}h focused</p>
-                          <p className="text-zinc-500">{d.intentionality}% intentionality</p>
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 shadow-xl text-xs space-y-1">
+                          <p className="font-bold text-zinc-200">{item.day}</p>
+                          <p className="text-purple-300 font-semibold">{item.mindfulHours} hrs Mindful Focus</p>
+                          <p className="text-zinc-400">{item.intentionality}% Intentionality</p>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <Bar dataKey="mindfulHours" radius={[6, 6, 0, 0]}>
-                  {weeklyData.map((entry, idx) => (
+                <Bar dataKey="mindfulHours" radius={[8, 8, 0, 0]}>
+                  {weeklyLogs.map((entry, index) => (
                     <Cell
-                      key={idx}
-                      fill={(entry.mindfulHours ?? 0) >= 2 ? "#a855f7" : "#3f3f46"}
+                      key={`cell-${index}`}
+                      fill={entry.mindfulHours >= 2.0 ? "#a855f7" : "#3f3f46"}
                     />
                   ))}
                 </Bar>
@@ -438,88 +497,49 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Intentionality trend area chart */}
-        <div
-          className="rounded-2xl p-5"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="flex items-center justify-between mb-4">
+        {/* Intentionality Trend Area Chart */}
+        <div className="rounded-3xl p-6 bg-zinc-900/40 backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-medium text-white">Focus Quality</h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Intentionality score trend</p>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <TrendingUp size={18} className="text-emerald-400" /> Focus Quality Trend
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">Intentionality score percentage</p>
             </div>
-            <TrendingUp size={16} className="text-zinc-500" />
+            <span className="text-xs font-bold text-emerald-400">Avg 80%</span>
           </div>
-          <div className="h-44">
+
+          <div className="h-48 pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <AreaChart data={weeklyLogs} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="intentGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <XAxis
-                  dataKey="day"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#52525b", fontSize: 11 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#52525b", fontSize: 11 }}
-                  domain={[0, 100]}
-                />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} />
+                <YAxis dataKey="intentionality" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} domain={[0, 100]} />
                 <Tooltip
-                  cursor={{ stroke: "rgba(168,85,247,0.2)" }}
+                  cursor={{ stroke: "#a855f7", strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
                     if (active && payload?.length) {
-                      const d = payload[0].payload;
+                      const item = payload[0].payload;
                       return (
-                        <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs">
-                          <p className="text-zinc-300">{d.day}</p>
-                          <p className="text-purple-300">{d.intentionality}% intentionality</p>
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 shadow-xl text-xs space-y-1">
+                          <p className="font-bold text-zinc-200">{item.day}</p>
+                          <p className="text-emerald-400 font-semibold">{item.intentionality}% Intentionality Score</p>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="intentionality"
-                  stroke="#a855f7"
-                  strokeWidth={2}
-                  fill="url(#intentGrad)"
-                />
+                <Area type="monotone" dataKey="intentionality" stroke="#a855f7" strokeWidth={3} fill="url(#areaGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-
-      {/* ── Quick Nav links ─────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Continue Learning", icon: <Play size={14} />, path: "/learning-lab", color: "#7c3aed" },
-          { label: "View Roadmap", icon: <BookOpen size={14} />, path: "/roadmap", color: "#0891b2" },
-          { label: "See Insights", icon: <TrendingUp size={14} />, path: "/insights", color: "#059669" },
-          { label: "Achievements", icon: <Trophy size={14} />, path: "/achievements", color: "#d97706" },
-        ].map(({ label, icon, path, color }) => (
-          <Link
-            key={path}
-            to={path}
-            className="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm text-zinc-300 hover:text-white transition-all group"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            <div className="flex items-center gap-2.5">
-              <span style={{ color }}>{icon}</span>
-              <span>{label}</span>
-            </div>
-            <ChevronRight size={14} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-          </Link>
-        ))}
       </div>
     </div>
   );

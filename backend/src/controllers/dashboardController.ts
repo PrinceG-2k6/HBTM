@@ -357,3 +357,61 @@ export const getAchievements = async (req: AuthRequest, res: Response): Promise<
 export const getReflections = async (req: AuthRequest, res: Response): Promise<void> => {
   res.status(200).json([]);
 };
+
+export const handleAIChat = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { prompt, hasImage, imageBase64 } = req.body;
+    const userId = req.userId;
+    let user = userId ? await User.findById(userId) : null;
+
+    const userName = user?.name || "Aspirant";
+    const currentTraits = user?.onboarding?.currentSelf || ["Unfocused", "Burnt Out"];
+    const targetTraits = user?.onboarding?.imagineSelf || ["Disciplined", "Confident"];
+
+    let aiReply = "";
+
+    if (hasImage || imageBase64) {
+      aiReply = `I've analyzed the uploaded image for your journey toward becoming **${targetTraits[0]}**! 
+
+**Key Insights Extracted**:
+1. **Focus Alignment**: Your visual schedule/materials indicate a structured attempt at deep work.
+2. **Identity Bridge**: Shifting from *${currentTraits[0]}* to *${targetTraits[0]}* requires minimizing high-dopamine distraction triggers present in this workflow.
+3. **Recommended Action**: Dedicate your next 45-minute block solely to active application before reviewing additional guides.`;
+    } else {
+      const lower = (prompt || "").toLowerCase();
+      if (lower.includes("focus") || lower.includes("time") || lower.includes("schedule")) {
+        aiReply = `Hello ${userName}! Based on your current growth profile (*${currentTraits.slice(0, 2).join(", ")}* ➔ *${targetTraits.slice(0, 2).join(", ")}*), here is my tailored recommendation:
+
+1. **Protocol**: Implement 90-minute ultradian focus blocks with 0 notifications.
+2. **Habit Stack**: Immediately follow each focus block with a 3-minute reflection note.
+3. **Curated Resource**: Check your Roadmap stage 2 for the *Neural Focus Reset* audio guide.`;
+      } else if (lower.includes("book") || lower.includes("recommend") || lower.includes("read")) {
+        aiReply = `Great question, ${userName}! To accelerate your transition into your ideal self (*${targetTraits.join(", ")}*), I recommend:
+
+- 📖 **Atomic Habits** by James Clear (Focus on identity-based habits)
+- 📖 **Deep Work** by Cal Newport (System architecture for focus)
+- 📖 **Man's Search for Meaning** by Viktor Frankl (Mindset & purpose)`;
+      } else {
+        aiReply = `As your **Agentic AI Growth Curator**, I am continuously mapping your daily media consumption and habits against your target identity (*${targetTraits.join(", ")}*).
+
+To help you achieve peak potential today:
+- What specific skill or challenge would you like to tackle right now?
+- Feel free to upload an image of your study schedule, notes, or code to analyze!`;
+      }
+    }
+
+    res.status(200).json({
+      id: `msg-${Date.now()}`,
+      sender: "ai",
+      text: aiReply,
+      timestamp: new Date().toISOString(),
+      suggestedActions: [
+        "View Growth Roadmap",
+        "Log a 5m Reflection",
+        "Explore Learning Lab"
+      ],
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error processing AI chat request", error: (error as Error).message });
+  }
+};

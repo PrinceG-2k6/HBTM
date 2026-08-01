@@ -13,6 +13,7 @@ import {
   getOpportunities,
   getAchievements,
   getReflections,
+  handleAIChat,
 } from "../controllers/dashboardController";
 import { authenticateToken } from "../middleware/authMiddleware";
 
@@ -31,5 +32,6 @@ router.get("/future-self", authenticateToken, getFutureSelf);
 router.get("/opportunities", authenticateToken, getOpportunities);
 router.get("/achievements", authenticateToken, getAchievements);
 router.get("/reflections", authenticateToken, getReflections);
+router.post("/chat", authenticateToken, handleAIChat);
 
 export default router;

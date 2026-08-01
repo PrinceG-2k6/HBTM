@@ -291,27 +291,29 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // Weekly focus log chart data
+  // Weekly focus log chart data from real database activity
   const weeklyLogs = dashboardData?.metrics?.dailyFocusLogs ?? [
-    { day: "Mon", mindfulHours: 1.5, intentionality: 75 },
-    { day: "Tue", mindfulHours: 2.8, intentionality: 88 },
-    { day: "Wed", mindfulHours: 1.2, intentionality: 68 },
-    { day: "Thu", mindfulHours: 3.4, intentionality: 94 },
-    { day: "Fri", mindfulHours: 2.4, intentionality: 82 },
-    { day: "Sat", mindfulHours: 1.8, intentionality: 76 },
-    { day: "Sun", mindfulHours: 0.9, intentionality: 62 },
+    { day: "Mon", mindfulHours: 0, intentionality: 0 },
+    { day: "Tue", mindfulHours: 0, intentionality: 0 },
+    { day: "Wed", mindfulHours: 0, intentionality: 0 },
+    { day: "Thu", mindfulHours: 0, intentionality: 0 },
+    { day: "Fri", mindfulHours: 0, intentionality: 0 },
+    { day: "Sat", mindfulHours: 0, intentionality: 0 },
+    { day: "Sun", mindfulHours: 0, intentionality: 0 },
   ];
 
-  // 7-day login streak visualization
-  const streakDays = [
-    { day: "M", active: true },
-    { day: "T", active: true },
-    { day: "W", active: true },
-    { day: "T", active: true },
-    { day: "F", active: true },
-    { day: "S", active: true },
+  // 7-day login streak visualization from real database activity
+  const streakDays = (dashboardData as any)?.weeklyPresence ?? [
+    { day: "M", active: false },
+    { day: "T", active: false },
+    { day: "W", active: false },
+    { day: "T", active: false },
+    { day: "F", active: false },
     { day: "S", active: false },
+    { day: "S", active: true },
   ];
+
+  const activeDaysCount = (dashboardData as any)?.activeDaysCount ?? streakDays.filter((d: any) => d.active).length;
 
   if (loading) {
     return (
@@ -393,8 +395,8 @@ export const DashboardPage: React.FC = () => {
           icon={<Clock size={20} />}
           label="Weekly Focus"
           value={`${weeklyHours} hrs`}
-          sub="12% vs last week"
-          badge="+0.8h"
+          sub={weeklyHours > 0 ? "Total time logged" : "First week active"}
+          badge={weeklyHours > 0 ? `${weeklyHours}h` : "Active"}
           gradient="linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(20,20,30,0.6) 100%)"
           accentColor="#a855f7"
         />
@@ -409,7 +411,7 @@ export const DashboardPage: React.FC = () => {
         <BorderlessStatCard
           icon={<TrendingUp size={20} />}
           label="Growth Potential"
-          value={`${dashboardData?.profile?.humanPotentialBreakdown?.total ?? 0}%`}
+          value={`${Number(dashboardData?.profile?.humanPotentialBreakdown?.total ?? 0).toFixed(1)}%`}
           sub="Identity Alignment"
           badge="Top 5%"
           gradient="linear-gradient(135deg, rgba(236,72,153,0.12) 0%, rgba(20,20,30,0.6) 100%)"
@@ -566,7 +568,7 @@ export const DashboardPage: React.FC = () => {
               <h3 className="text-xl text-white flex items-center gap-2">
                 <Flame size={18} className="text-orange-400" /> Weekly Presence Log
               </h3>
-              <span className="text-sm text-emerald-300">6/7 Active</span>
+              <span className="text-sm text-emerald-300">{activeDaysCount}/7 Active</span>
             </div>
             <p className="text-sm text-zinc-300 mb-4">
               Your daily logins and active time are recorded in the database.

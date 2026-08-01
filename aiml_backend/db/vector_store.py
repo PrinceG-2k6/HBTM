@@ -1,17 +1,21 @@
-import chromadb
+try:
+    import chromadb
+except ImportError:
+    chromadb = None
+    
 from typing import List, Dict, Optional, Any
 
 from config import CHROMA_PERSIST_DIR
 
 
-def get_chroma_client() -> chromadb.PersistentClient:
+def get_chroma_client() -> Any:
     """
     Get a persistent ChromaDB client.
     """
     return chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
 
 
-def get_content_collection() -> chromadb.Collection:
+def get_content_collection() -> Any:
     """
     Get or create the collection for content embeddings.
     """
@@ -22,7 +26,7 @@ def get_content_collection() -> chromadb.Collection:
     )
 
 
-def get_skill_collection() -> chromadb.Collection:
+def get_skill_collection() -> Any:
     """
     Get or create the collection for skill embeddings.
     """

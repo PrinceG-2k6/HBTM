@@ -120,12 +120,12 @@ def get_level_label(level: float) -> str:
     return "expert"
 
 def get_skill_recommendations(skill_name: str, current_level: float) -> dict:
-    """Generate search query recommendations for a skill at a given level."""
-    if current_level < 30:
+    """Generate search query recommendations for a skill at a given level (0-10 scale)."""
+    if current_level < 3.0:
         difficulty = "Beginner"
         search_queries = [f"introduction to {skill_name}", f"basics of {skill_name}", f"{skill_name} for beginners"]
         content_types = ["tutorial", "crash course", "article"]
-    elif current_level < 70:
+    elif current_level < 7.0:
         difficulty = "Intermediate"
         search_queries = [f"advanced {skill_name} techniques", f"{skill_name} tips and tricks", f"{skill_name} masterclass"]
         content_types = ["course", "book", "project"]

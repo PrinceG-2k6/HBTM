@@ -1,13 +1,17 @@
 """Content curation API routes."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from pydantic import BaseModel
 from typing import Optional
 
-from db.database import get_db
+from db.database import get_db, async_session_maker
+from db.models import User, ContentHistory
 from services.curation_service import get_curated_feed
-from tools.db_tools import update_last_active
+from api.routes_auth import get_current_user
+from tools.db_tools import update_last_active, utcnow, get_user_skills, update_skill_level
+from tools.skill_tools import get_level_label
 
 router = APIRouter()
 
@@ -37,13 +41,6 @@ async def api_curate(request: CurateRequest, db: AsyncSession = Depends(get_db))
     return result
 
 
-from api.routes_auth import get_current_user
-from db.models import User
-
-from sqlalchemy import select
-from fastapi import BackgroundTasks
-from services.analysis_service import update_user_skills
-
 @router.get('/feed')
 async def api_get_feed(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """GET feed for frontend"""
@@ -69,6 +66,7 @@ async def api_get_feed(current_user: User = Depends(get_current_user), db: Async
     
     return result
 
+
 class CompleteContentRequest(BaseModel):
     url: str
     title: str
@@ -76,14 +74,10 @@ class CompleteContentRequest(BaseModel):
     platform: str
     skill_name: Optional[str] = None
 
-from db.models import ContentHistory
-from tools.db_tools import utcnow, get_user_skills, update_skill_level
-from tools.skill_tools import get_level_label
-from db.database import async_session_maker
-
-async def background_skill_update(user_id: str, url: str, skill_name: Optional[str] = None):
+async def background_skill_update(user_id: str, url: str, skill_name: str = None):
     async with async_session_maker() as db:
         try:
+            from services.analysis_service import update_user_skills
             skills_updated = await update_user_skills(db, user_id, [url])
             print(f"Ran background_skill_update for {user_id}: {skills_updated}")
             
@@ -143,10 +137,6 @@ async def api_complete_content(
         print(f"Instantly bumped skill '{target_skill.skill_name}' for user {current_user.id} to level {new_level}")
 
     await db.commit()
-    
-    from services.curation_service import _feed_cache
-    if current_user.id in _feed_cache:
-        del _feed_cache[current_user.id]
     
     return {
         "status": "success", 

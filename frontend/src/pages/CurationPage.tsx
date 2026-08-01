@@ -83,17 +83,37 @@ export const CurationPage: React.FC = () => {
                         className="block group"
                       >
                         <Card className={`flex flex-col h-full bg-zinc-900/40 backdrop-blur-xl border border-white/5 overflow-hidden transition-all ${completedUrls.has(item.url) ? "opacity-60 border-emerald-500/30" : "group-hover:border-purple-500/30"}`}>
-                          {/* Image / Thumbnail placeholder */}
-                          <div className="h-40 bg-zinc-800/80 relative">
-                            {isVideo && item.url.includes('v=') ? (
-                              <img src={`https://img.youtube.com/vi/${item.url.split('v=')[1]}/0.jpg`} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" alt="Thumbnail" />
-                            ) : item.thumbnail_url ? (
-                              <img src={item.thumbnail_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all" alt="Thumbnail" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-zinc-600 group-hover:text-purple-400 transition-colors">
-                                <Icon size={48} />
-                              </div>
-                            )}
+                  {/* Image / Thumbnail placeholder */}
+                  <div className="h-40 bg-zinc-800/80 relative overflow-hidden">
+                    {(() => {
+                      const url = item.url || "";
+                      let videoId = "";
+                      if (url.includes("v=")) {
+                        videoId = url.split("v=")[1]?.split("&")[0]?.split("?")[0] || "";
+                      } else if (url.includes("youtu.be/")) {
+                        videoId = url.split("youtu.be/")[1]?.split("&")[0]?.split("?")[0] || "";
+                      }
+                      
+                      const thumbSrc = item.thumbnail_url || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null);
+                      
+                      if (thumbSrc) {
+                        return (
+                          <img
+                            src={thumbSrc}
+                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all"
+                            alt={item.title || "Thumbnail"}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        );
+                      }
+                      return (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-600 group-hover:text-purple-400 transition-colors">
+                          <Icon size={48} />
+                        </div>
+                      );
+                    })()}
                             <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-medium text-white flex items-center gap-1.5">
                               <Icon size={14} className="text-purple-400" />
                               <span className="capitalize">{item.content_type}</span>

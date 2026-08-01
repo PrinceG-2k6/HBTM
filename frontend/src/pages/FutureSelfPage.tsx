@@ -48,8 +48,8 @@ export const FutureSelfPage: React.FC = () => {
         <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-gray-300 via-amber-300 to-emerald-400 -translate-x-1/2 hidden md:block" />
 
         <div className="space-y-6">
-          {milestones.map((milestone, idx) => {
-            const colors = PERIOD_COLORS[milestone.period];
+          {milestones.map((milestone: any, idx: number) => {
+            const colors = PERIOD_COLORS[milestone.period] || PERIOD_COLORS["6 Months"];
             const isLeft = idx % 2 === 0;
             return (
               <div key={milestone.period} className="relative">
@@ -95,7 +95,7 @@ export const FutureSelfPage: React.FC = () => {
                     <div>
                       <p className="text-2xs uppercase tracking-wider text-gray-500 mb-2">Skills</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {milestone.skills.map(s => (
+                        {milestone.skills.map((s: any) => (
                           <span key={s} className="text-2xs px-2.5 py-1 bg-white/80 border border-gray-200 rounded-full text-gray-700 flex items-center gap-1">
                             <CheckCircle2 size={9} className="text-emerald-500" />{s}
                           </span>
@@ -107,7 +107,7 @@ export const FutureSelfPage: React.FC = () => {
                     <div>
                       <p className="text-2xs uppercase tracking-wider text-gray-500 mb-2">Projects</p>
                       <div className="space-y-1">
-                        {milestone.projects.map(p => (
+                        {milestone.projects.map((p: any) => (
                           <div key={p} className="flex items-center gap-1.5 text-xs text-gray-700">
                             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.dot}`} />{p}
                           </div>

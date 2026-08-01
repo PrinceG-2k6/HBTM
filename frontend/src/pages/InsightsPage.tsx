@@ -83,7 +83,7 @@ export const InsightsPage: React.FC = () => {
             Your Strengths
           </h3>
           <div className="space-y-3">
-            {weeklyInsights.strengths.map((s, i) => (
+            {(weeklyInsights?.strengths || []).map((s: any, i: number) => (
               <div key={i} className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm text-emerald-900">{s.topic}</span>
@@ -105,7 +105,7 @@ export const InsightsPage: React.FC = () => {
             Areas to Focus
           </h3>
           <div className="space-y-3">
-            {weeklyInsights.weaknesses.map((w, i) => (
+            {(weeklyInsights?.weaknesses || []).map((w: any, i: number) => (
               <div key={i} className="p-3.5 rounded-2xl bg-orange-50 border border-orange-200">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm text-orange-900">{w.topic}</span>
@@ -126,14 +126,14 @@ export const InsightsPage: React.FC = () => {
         <h3 className="text-base text-gray-900">Suggested Practice for Weak Topics</h3>
         <p className="text-xs text-gray-500">PACER curated these specifically to address your knowledge gaps.</p>
         <div className="space-y-3">
-          {weeklyInsights.suggestedPractice.map((practice, i) => (
+          {(weeklyInsights?.suggestedPractice || []).map((practice: any, i: number) => (
             <div key={i} className="p-3.5 rounded-2xl bg-white/60 border border-black/5 hover:border-amber-300/60 transition-all flex items-start justify-between gap-3">
               <div>
                 <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">{practice.type}</span>
                 <h4 className="text-base text-gray-900 mt-1.5">{practice.title}</h4>
                 <p className="text-sm text-gray-600 mt-0.5">{practice.reason}</p>
               </div>
-              <Link to={practice.route}
+              <Link to={practice.route || "/learning-lab"}
                 className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors shrink-0">
                 <PlayCircle size={13} />Start
               </Link>
@@ -148,14 +148,14 @@ export const InsightsPage: React.FC = () => {
           <h3 className="text-base text-gray-900">Skill Mastery Heatmap</h3>
           <p className="text-xs text-gray-500">Color intensity = mastery level. Hover for details.</p>
         </div>
-        <SkillHeatmap skillMatrix={metrics.skillMatrix} />
+        <SkillHeatmap skillMatrix={metrics?.skillMatrix || []} />
       </Card>
 
       {/* Domain bar breakdown */}
       <Card className="space-y-4">
         <h3 className="text-base text-gray-900">Domain Progress</h3>
         <div className="space-y-3">
-          {metrics.skillMatrix.map(skill => (
+          {(metrics?.skillMatrix || []).map((skill: any) => (
             <div key={skill.skill}>
               <div className="flex justify-between text-sm text-gray-700 mb-1">
                 <span>{skill.skill}</span>

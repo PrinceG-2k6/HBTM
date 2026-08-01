@@ -3,6 +3,7 @@ import type { TopicProgress, NodeState } from "../../api";
 
 interface Props {
   topics: TopicProgress[];
+  onTopicHover?: (topicName: string | null) => void;
 }
 
 interface BubbleNode {
@@ -36,7 +37,7 @@ function clamp(val: number, min: number, max: number) {
 }
 
 /** Multi-dimensional physics-based bubble graph */
-export const TopicBubbleChart: React.FC<Props> = ({ topics }) => {
+export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tooltip, setTooltip] = useState<{ topic: TopicProgress; x: number; y: number } | null>(null);
   const nodesRef = useRef<BubbleNode[]>([]);
@@ -267,6 +268,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics }) => {
       }
     }
     setTooltip(found ? { topic: found.topic, x: mx, y: my } : null);
+    onTopicHover?.(found ? found.topic.name : null);
   };
 
   const stateColor = (state: NodeState) => STATE_COLORS[state]?.stroke ?? "#888";
@@ -280,7 +282,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics }) => {
         className="w-full rounded-2xl cursor-crosshair"
         style={{ height: 380 }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTooltip(null)}
+        onMouseLeave={() => { setTooltip(null); onTopicHover?.(null); }}
       />
 
       {/* Tooltip */}

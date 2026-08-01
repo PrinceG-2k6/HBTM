@@ -1,151 +1,110 @@
 import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import {
-  initialProfile,
-  initialIntervention,
-  initialResources,
-  initialRoadmapStages,
-  initialMetrics,
-  initialMemoryVectors,
-  initialVisualizerConcepts,
-  initialWeeklyInsights,
-  initialPreferences as initialLearnerPreferences,
-  initialAIKnows,
-  initialTodayMission,
-  initialAICoach,
-  initialLearningConsistency,
-  initialGoalPlanner,
-  initialFutureMilestones as initialFutureSelf,
-  initialOpportunities,
-  initialAchievements,
-} from "./dummyData";
-import type { MemoryVector, LearnerProfile, LearnerPreferences } from "./types";
+
+// Dynamic base URL for Express Backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const axiosInstance = axios.create({
-  baseURL: "/api",
-  timeout: 5000,
+  baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
 
-const mock = new MockAdapter(axiosInstance, { delayResponse: 300 });
-
-// Mutable state holders
-let profileState = { ...initialProfile };
-let memoryState = [...initialMemoryVectors];
-let roadmapState = [...initialRoadmapStages];
-let resourcesState = [...initialResources];
-let preferencesState = { ...initialLearnerPreferences };
-let opportunitiesState = [...initialOpportunities];
-
-// ── Core Dashboard ────────────────────────────────────────────
-mock.onGet("/profile").reply(200, profileState);
-
-mock.onPut("/profile").reply((config) => {
-  const updated: Partial<LearnerProfile> = JSON.parse(config.data || "{}");
-  profileState = { ...profileState, ...updated };
-  return [200, profileState];
+// Attach JWT token dynamically to all outgoing requests
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("hbtm_token") || localStorage.getItem("pacer_token");
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
-mock.onGet("/dashboard").reply(200, {
-  profile: profileState,
-  intervention: initialIntervention,
-  resources: resourcesState,
-  metrics: initialMetrics,
-  roadmapStages: roadmapState,
-  todayMission: initialTodayMission,
-  aiCoach: initialAICoach,
-  learningConsistency: initialLearningConsistency,
-  goalPlanner: initialGoalPlanner,
-});
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    localStorage.setItem("hbtm_token", token);
+    axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    localStorage.removeItem("hbtm_token");
+    delete axiosInstance.defaults.headers.common["Authorization"];
+  }
+};
 
-// ── Roadmap ───────────────────────────────────────────────────
-mock.onGet("/roadmap").reply(200, {
-  stages: roadmapState,
-  totalMilestones: 14,
-  adaptedCount: 6,
-});
+export const authApi = {
+  register: async (data: { name: string; email: string; password?: string; role?: string; onboarding?: any }) => {
+    const res = await axiosInstance.post("/auth/register", data);
+    if (res.data?.token) {
+      setAuthToken(res.data.token);
+    }
+    return res.data;
+  },
+  login: async (data: { email: string; password?: string }) => {
+    const res = await axiosInstance.post("/auth/login", data);
+    if (res.data?.token) {
+      setAuthToken(res.data.token);
+    }
+    return res.data;
+  },
+  googleAuth: async (data: { googleToken?: string; credential?: string; email?: string; name?: string; avatarUrl?: string; picture?: string; onboarding?: any }) => {
+    const res = await axiosInstance.post("/auth/google", data);
+    if (res.data?.token) {
+      setAuthToken(res.data.token);
+    }
+    return res.data;
+  },
+  getMe: async () => {
+    try {
+      const res = await axiosInstance.get("/auth/me");
+      return res.data.user;
+    } catch {
+      return null;
+    }
+  },
+};
 
-// ── Insights (was Analysis) ───────────────────────────────────
-mock.onGet("/analysis").reply(200, initialMetrics);
-mock.onGet("/insights").reply(200, {
-  metrics: initialMetrics,
-  weeklyInsights: initialWeeklyInsights,
-});
+export const onboardingApi = {
+  getAttributes: async (search?: string, type?: string) => {
+    try {
+      const res = await axiosInstance.get("/onboarding/attributes", { params: { search, type } });
+      return res.data;
+    } catch {
+      const currentList = [
+        "Unrelaxed", "Don't Believe In Myself", "Tired", "Lazy", "Absent-minded",
+        "Small Faith", "Depressed", "In Debt", "Isolated", "Disconnected", "Dreamer",
+        "Time Management", "Busy", "Exhausted", "Perfectionist", "Fitness Inconsistency",
+        "Self-conscious", "Out Of Shape", "Burnt Out", "Creatively Stuck"
+      ].map((n) => ({ name: n, type: "current", popular: true }));
 
-// ── Memory / Learning Profile ─────────────────────────────────
-mock.onGet("/memory").reply(200, memoryState);
+      const imagineList = [
+        "Confident", "Energetic", "Focused", "Disciplined", "Mindful", "Faithful",
+        "Happy", "Wealthy", "Connected", "Present", "Healthy", "Active", "Peaceful",
+        "Courageous", "Self-accepting", "Action-oriented", "Self-assured", "Imaginative",
+        "Accountable", "Recharged"
+      ].map((n) => ({ name: n, type: "imagine", popular: true }));
 
-mock.onPost("/memory").reply((config) => {
-  const newVector: Partial<MemoryVector> = JSON.parse(config.data || "{}");
-  const created: MemoryVector = {
-    id: `mem-${Date.now()}`,
-    category: newVector.category || "Identity & Aspirations",
-    statement: newVector.statement || "",
-    confidence: 96,
-    lastUpdated: "Just now",
-    impactOnCurator: "Directly shapes future media filter & dynamic roadmap curation.",
-    active: true,
-  };
-  memoryState = [created, ...memoryState];
-  return [201, memoryState];
-});
+      let cur = currentList;
+      let img = imagineList;
 
-mock.onGet("/learning-profile").reply(200, {
-  memoryVectors: memoryState,
-  preferences: preferencesState,
-  aiKnows: initialAIKnows,
-});
+      if (search) {
+        const s = search.toLowerCase();
+        cur = cur.filter(x => x.name.toLowerCase().includes(s));
+        img = img.filter(x => x.name.toLowerCase().includes(s));
+      }
 
-mock.onPut("/learning-profile/preferences").reply((config) => {
-  const updated: Partial<LearnerPreferences> = JSON.parse(config.data || "{}");
-  preferencesState = { ...preferencesState, ...updated, lastUpdated: "Just now" };
-  return [200, preferencesState];
-});
+      return { total: cur.length + img.length, currentSelf: cur, imagineSelf: img };
+    }
+  },
+  getQuestions: async () => {
+    const res = await axiosInstance.get("/onboarding/questions");
+    return res.data.questions;
+  },
+  submit: async (data: any) => {
+    const res = await axiosInstance.post("/onboarding/submit", data);
+    return res.data;
+  },
+};
 
-// ── Learning Lab (was Visualizer) ────────────────────────────
-mock.onGet("/visualizer").reply(200, initialVisualizerConcepts);
-
-// ── Future Self ───────────────────────────────────────────────
-mock.onGet("/future-self").reply(200, {
-  milestones: initialFutureSelf,
-  profile: profileState,
-});
-
-// ── Opportunities ─────────────────────────────────────────────
-mock.onGet("/opportunities").reply(200, opportunitiesState);
-
-mock.onPatch("/opportunities/:id/bookmark").reply((config) => {
-  const id = config.url?.split("/")?.[2];
-  opportunitiesState = opportunitiesState.map((o) =>
-    o.id === id ? { ...o, bookmarked: !o.bookmarked } : o
-  );
-  return [200, opportunitiesState];
-});
-
-// ── Achievements ──────────────────────────────────────────────
-mock.onGet("/achievements").reply(200, {
-  achievements: initialAchievements,
-  totalXP: initialAchievements.filter(a => a.unlocked).reduce((s, a) => s + a.xpReward, 0),
-  unlockedCount: initialAchievements.filter(a => a.unlocked).length,
-});
-
-// ── Reflections ───────────────────────────────────────────────
-let reflectionsState: { id: string; lessonTitle: string; learnedToday: string; confusion: string; confidenceRating: number; createdAt: string }[] = [];
-
-mock.onGet("/reflections").reply(200, reflectionsState);
-
-mock.onPost("/reflections").reply((config) => {
-  const entry = JSON.parse(config.data || "{}");
-  const created = { id: `ref-${Date.now()}`, createdAt: new Date().toLocaleDateString(), ...entry };
-  reflectionsState = [created, ...reflectionsState];
-  return [201, reflectionsState];
-});
-
-// ── Bookmarks ─────────────────────────────────────────────────
-mock.onPatch("/resources/:id/bookmark").reply((config) => {
-  const id = config.url?.split("/")?.[2];
-  resourcesState = resourcesState.map((r) =>
-    r.id === id ? { ...r, bookmarked: !r.bookmarked } : r
-  );
-  return [200, resourcesState];
-});
+export const curationApi = {
+  getFeed: async () => {
+    const res = await axiosInstance.get("/curation/feed");
+    return res.data;
+  },
+};

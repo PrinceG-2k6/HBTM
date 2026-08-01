@@ -36,6 +36,8 @@ export type {
   ReflectionEntry,
 } from "./types";
 
+export { authApi, onboardingApi, curationApi } from "./axiosClient";
+
 export interface DashboardDataResponse {
   profile: LearnerProfile;
   intervention: AgenticIntervention;
@@ -48,10 +50,15 @@ export interface DashboardDataResponse {
   goalPlanner: GoalPlannerData;
 }
 
-export interface RoadmapDataResponse {
-  stages: RoadmapStage[];
-  totalMilestones: number;
-  adaptedCount: number;
+export interface AchievementsResponse {
+  achievements: Achievement[];
+  totalXP: number;
+  unlockedCount: number;
+}
+
+export interface FutureSelfResponse {
+  milestones: FutureMilestone[];
+  profile: Partial<LearnerProfile>;
 }
 
 export interface InsightsDataResponse {
@@ -65,76 +72,91 @@ export interface LearningProfileResponse {
   aiKnows: AIKnowsFact[];
 }
 
-export interface AchievementsResponse {
-  achievements: Achievement[];
-  totalXP: number;
-  unlockedCount: number;
-}
-
-export interface FutureSelfResponse {
-  milestones: FutureMilestone[];
-  profile: LearnerProfile;
+export interface RoadmapDataResponse {
+  stages: RoadmapStage[];
+  totalMilestones: number;
+  adaptedCount: number;
 }
 
 export const apiService = {
   getDashboardData: async (): Promise<DashboardDataResponse> => {
-    const res = await axiosInstance.get<DashboardDataResponse>("/dashboard");
+    const res = await axiosInstance.get("/dashboard");
     return res.data;
   },
   getProfile: async (): Promise<LearnerProfile> => {
-    const res = await axiosInstance.get<LearnerProfile>("/profile");
+    const res = await axiosInstance.get("/profile");
     return res.data;
   },
-  updateProfile: async (updated: Partial<LearnerProfile>): Promise<LearnerProfile> => {
-    const res = await axiosInstance.put<LearnerProfile>("/profile", updated);
+  updateProfile: async (updates: Partial<LearnerProfile>): Promise<LearnerProfile> => {
+    const res = await axiosInstance.put("/profile", updates);
+    return res.data;
+  },
+  getRoadmap: async () => {
+    const res = await axiosInstance.get("/roadmap");
     return res.data;
   },
   getRoadmapData: async (): Promise<RoadmapDataResponse> => {
-    const res = await axiosInstance.get<RoadmapDataResponse>("/roadmap");
+    const res = await axiosInstance.get("/roadmap");
     return res.data;
   },
-  getCognitiveAnalysis: async (): Promise<CognitiveMetrics> => {
-    const res = await axiosInstance.get<CognitiveMetrics>("/analysis");
+  getAnalysis: async () => {
+    const res = await axiosInstance.get("/analysis");
+    return res.data;
+  },
+  getCognitiveAnalysis: async () => {
+    const res = await axiosInstance.get("/analysis");
     return res.data;
   },
   getInsights: async (): Promise<InsightsDataResponse> => {
-    const res = await axiosInstance.get<InsightsDataResponse>("/insights");
+    const res = await axiosInstance.get("/insights");
+    return res.data;
+  },
+  getMemory: async (): Promise<MemoryVector[]> => {
+    const res = await axiosInstance.get("/memory");
     return res.data;
   },
   getLearnerMemory: async (): Promise<MemoryVector[]> => {
-    const res = await axiosInstance.get<MemoryVector[]>("/memory");
+    const res = await axiosInstance.get("/memory");
     return res.data;
   },
-  addMemoryVector: async (vector: { category: MemoryVector["category"]; statement: string }): Promise<MemoryVector[]> => {
-    const res = await axiosInstance.post<MemoryVector[]>("/memory", vector);
+  addMemoryVector: async (vector: any) => {
+    const res = await axiosInstance.post("/memory", vector);
     return res.data;
   },
-  getLearningProfile: async (): Promise<LearningProfileResponse> => {
-    const res = await axiosInstance.get<LearningProfileResponse>("/learning-profile");
-    return res.data;
-  },
-  updatePreferences: async (prefs: Partial<LearnerPreferences>): Promise<LearnerPreferences> => {
-    const res = await axiosInstance.put<LearnerPreferences>("/learning-profile/preferences", prefs);
+  getVisualizer: async (): Promise<VisualizerConcept[]> => {
+    const res = await axiosInstance.get("/visualizer");
     return res.data;
   },
   getVisualizerNotes: async (): Promise<VisualizerConcept[]> => {
-    const res = await axiosInstance.get<VisualizerConcept[]>("/visualizer");
+    const res = await axiosInstance.get("/visualizer");
     return res.data;
   },
   getFutureSelf: async (): Promise<FutureSelfResponse> => {
-    const res = await axiosInstance.get<FutureSelfResponse>("/future-self");
+    const res = await axiosInstance.get("/future-self");
     return res.data;
   },
   getOpportunities: async (): Promise<Opportunity[]> => {
-    const res = await axiosInstance.get<Opportunity[]>("/opportunities");
+    const res = await axiosInstance.get("/opportunities");
     return res.data;
   },
   getAchievements: async (): Promise<AchievementsResponse> => {
-    const res = await axiosInstance.get<AchievementsResponse>("/achievements");
+    const res = await axiosInstance.get("/achievements");
     return res.data;
   },
-  addReflection: async (entry: { lessonTitle: string; learnedToday: string; confusion: string; confidenceRating: number }): Promise<unknown[]> => {
-    const res = await axiosInstance.post("/reflections", entry);
+  getReflections: async () => {
+    const res = await axiosInstance.get("/reflections");
+    return res.data;
+  },
+  addReflection: async (data: any) => {
+    const res = await axiosInstance.post("/reflections", data);
+    return res.data;
+  },
+  getLearningProfile: async (): Promise<LearningProfileResponse> => {
+    const res = await axiosInstance.get("/learning-profile");
+    return res.data;
+  },
+  updatePreferences: async (preferences: Partial<LearnerPreferences>) => {
+    const res = await axiosInstance.put("/learning-profile/preferences", preferences);
     return res.data;
   },
 };

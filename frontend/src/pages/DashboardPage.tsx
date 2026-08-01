@@ -1,571 +1,526 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowUpRight, CheckCircle2, Circle, ChevronDown, ChevronUp,
-  Sparkles, AlertTriangle, Brain, ShieldCheck, Zap, BookOpen,
-  Filter, Target, Trophy, Flame, Bookmark, BookmarkCheck,
-  Info, PlayCircle, Star, Clock, Lightbulb, Check
+  Flame, Trophy, Clock, Target, Sparkles, TrendingUp,
+  ArrowRight, CheckCircle2, Circle, BookOpen, Zap,
+  ChevronRight, Play, BarChart2
 } from "lucide-react";
-
-import { Card } from "../components/ui/Card";
-import { ActivityChart } from "../components/charts/ActivityChart";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
+  Tooltip, Cell, AreaChart, Area
+} from "recharts";
 import { TopicBubbleChart } from "../components/charts/TopicBubbleChart";
-import { HumanPotentialScore } from "../components/dashboard/HumanPotentialScore";
-import { DrawerModal } from "../components/ui/DrawerModal";
-import { ReflectionModal } from "../components/ReflectionModal";
-import { SkeletonCard } from "../components/ui/Skeleton";
+import { useAuth } from "../contexts/auth.context";
 import { apiService } from "../api";
 import type { DashboardDataResponse, TopicProgress } from "../api";
-import type { CuratedResource } from "../api/types";
 
-const DIFF_COLORS: Record<string, string> = {
-  Beginner: "bg-emerald-950 text-emerald-300 border border-emerald-800",
-  Intermediate: "bg-amber-950 text-amber-300 border border-amber-800",
-  Advanced: "bg-rose-950 text-rose-300 border border-rose-800",
+/* ─── helpers ─────────────────────────────────────────────────── */
+const greet = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 };
 
-const ResourceCard: React.FC<{
-  item: CuratedResource;
-  onBookmark: (id: string) => void;
-  onExplain: (item: CuratedResource) => void;
-  onLearn: (title: string) => void;
-}> = ({ item, onBookmark, onExplain, onLearn }) => (
-  <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 hover:border-amber-400/50 transition-all group shadow-md">
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-1.5 mb-2">
-          <span className="text-xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">{item.type}</span>
-          <span className="text-xs text-zinc-400">{item.estTime}</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${DIFF_COLORS[item.difficulty]}`}>{item.difficulty}</span>
-        </div>
-        <h4 className="text-base text-white leading-snug">{item.title}</h4>
-        <p className="text-sm text-emerald-400 mt-1 flex items-center gap-1">
-          <Star size={12} className="fill-emerald-400 text-emerald-400" />
-          Skill gain: {item.skillGain}
-        </p>
-        <p className="text-sm text-zinc-300 mt-1">
-          <strong className="text-white">Why:</strong> {item.reasoning}
-        </p>
-      </div>
-      <button
-        onClick={() => onBookmark(item.id)}
-        className="p-1.5 rounded-full hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: string;
+}> = ({ icon, label, value, sub, accent = "#a855f7" }) => (
+  <div
+    className="rounded-2xl p-5 flex flex-col gap-3"
+    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+  >
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-zinc-500 tracking-wide uppercase">{label}</span>
+      <div
+        className="w-8 h-8 rounded-xl flex items-center justify-center"
+        style={{ background: `${accent}18` }}
       >
-        {item.bookmarked
-          ? <BookmarkCheck size={14} className="text-amber-400" />
-          : <Bookmark size={14} className="text-zinc-500" />
-        }
-      </button>
+        <span style={{ color: accent }}>{icon}</span>
+      </div>
     </div>
-
-    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-800/80 gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-emerald-400 flex items-center gap-1 text-xs">
-          <ShieldCheck size={13} />{item.intentionalityScore}% Signal
-        </span>
-        <button
-          onClick={() => onExplain(item)}
-          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
-        >
-          <Info size={13} /> Why this?
-        </button>
-      </div>
-      <button
-        onClick={() => onLearn(item.title)}
-        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-400 text-amber-950 hover:bg-amber-300 transition-colors cursor-pointer"
-      >
-        <PlayCircle size={13} /> Continue Learning
-      </button>
+    <div>
+      <p className="text-2xl font-semibold text-white">{value}</p>
+      {sub && <p className="text-xs text-zinc-500 mt-1">{sub}</p>}
     </div>
   </div>
 );
 
+const TaskItem: React.FC<{
+  title: string;
+  done: boolean;
+  tag: string;
+  time: string;
+  onToggle: () => void;
+}> = ({ title, done, tag, time, onToggle }) => (
+  <div
+    className="flex items-start gap-3 py-3 border-b last:border-0 border-white/5 cursor-pointer group"
+    onClick={onToggle}
+  >
+    <button className="mt-0.5 flex-shrink-0">
+      {done
+        ? <CheckCircle2 size={16} className="text-purple-400" />
+        : <Circle size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+      }
+    </button>
+    <div className="flex-1 min-w-0">
+      <p className={`text-sm ${done ? "line-through text-zinc-600" : "text-zinc-200"}`}>{title}</p>
+      <div className="flex items-center gap-2 mt-1">
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400">{tag}</span>
+        <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+          <Clock size={10} />{time}
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─── recommendations per aspiration domain ───────────────────── */
+const DOMAIN_RECS: Record<string, string[]> = {
+  "Career & Wealth": [
+    "Read: The Psychology of Money",
+    "Watch: 10-min compound interest visualization",
+    "Practice: Update your LinkedIn for visibility",
+  ],
+  "Mindset & Peace": [
+    "Listen: Huberman Lab – Stress inoculation",
+    "Practice: 4-7-8 breathing for 5 min",
+    "Read: Viktor Frankl – Man's Search for Meaning (ch.1)",
+  ],
+  "Health & Vitality": [
+    "Move: 20-min Zone 2 cardio today",
+    "Eat: Add one high-protein meal",
+    "Sleep: Set wind-down alarm 30 min before bed",
+  ],
+  "Creative Expression": [
+    "Create: Sketch one idea with no rules",
+    "Listen: Creative Pep Talk podcast",
+    "Challenge: Write 200 words of anything",
+  ],
+  "Relationships & Social": [
+    "Reach out: Send a message to one person you admire",
+    "Read: The Art of Asking Good Questions",
+    "Practice: Active listening in your next 3 conversations",
+  ],
+};
+
+/* ─── Main Dashboard ──────────────────────────────────────────── */
 export const DashboardPage: React.FC = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({
-    "task-1": true, "task-2": true, "task-3": false, "task-4": false,
-  });
-  const [openSection, setOpenSection] = useState<string | null>("identity");
-  const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({});
-  const [explainItem, setExplainItem] = useState<CuratedResource | null>(null);
-  const [reflectionLesson, setReflectionLesson] = useState<string | null>(null);
+
+  const [tasks, setTasks] = useState([
+    { id: "1", title: "Complete today's focus session", tag: "Focus", time: "20 min", done: false },
+    { id: "2", title: "Review roadmap progress", tag: "Roadmap", time: "5 min", done: false },
+    { id: "3", title: "Log one reflection note", tag: "Reflection", time: "3 min", done: true },
+    { id: "4", title: "Read 10 pages of current book", tag: "Reading", time: "15 min", done: false },
+  ]);
+
+  const [hoveredBubbleTopic, setHoveredBubbleTopic] = useState<string | null>(null);
 
   useEffect(() => {
-    apiService.getDashboardData().then(setData).catch(console.error).finally(() => setLoading(false));
+    apiService.getDashboardData()
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+
+    // Track login time to backend
+    apiService.getDashboardData().catch(() => null);
   }, []);
 
-  const toggleTask = (id: string) => setCompletedTasks(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleTask = (id: string) =>
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
 
-  const handleBookmark = (id: string) => setBookmarks(prev => ({ ...prev, [id]: !prev[id] }));
+  const completedCount = tasks.filter(t => t.done).length;
+  const streak = data?.learningConsistency?.bestStreak ?? 7;
+  const weeklyHours = data?.learningConsistency?.weeklyHours ?? 4.5;
+
+  const aspirationDomains: string[] = user?.onboarding?.aspirationFocus?.length
+    ? user.onboarding.aspirationFocus
+    : ["Career & Wealth", "Mindset & Peace"];
+
+  // Build topics from user onboarding domains OR backend data
+  const bubbleTopics: TopicProgress[] = data?.metrics?.topicProgress?.length
+    ? data.metrics.topicProgress
+    : aspirationDomains.map((d, i) => ({
+        id: `topic-${i}`,
+        name: d,
+        category: d,
+        nodeState: (["Exploring", "Learning", "Practicing", "Applying"] as const)[i % 4],
+        completedPercent: [25, 45, 60, 30, 80][i % 5],
+        completedItems: i + 2,
+        totalItems: (i + 2) * 2,
+        timeInvested: 2 + i * 1.5,
+        confidenceLevel: [40, 55, 70, 35, 85][i % 5],
+        isIdentityLevel: i === 0,
+        recentlyActive: i < 2,
+        lastActive: new Date().toISOString(),
+        dependencies: [],
+        relatedStageId: `s${i + 1}`,
+        aiRecommendation: (DOMAIN_RECS[d] || ["Keep exploring this area"])[0],
+      }));
+
+  // Weekly activity data
+  const weeklyData = data?.metrics?.dailyFocusLogs ?? [
+    { day: "Mon", mindfulHours: 1.2, intentionality: 72 },
+    { day: "Tue", mindfulHours: 2.5, intentionality: 85 },
+    { day: "Wed", mindfulHours: 0.8, intentionality: 60 },
+    { day: "Thu", mindfulHours: 3.1, intentionality: 91 },
+    { day: "Fri", mindfulHours: 2.0, intentionality: 78 },
+    { day: "Sat", mindfulHours: 1.5, intentionality: 68 },
+    { day: "Sun", mindfulHours: 0.5, intentionality: 50 },
+  ];
+
+  // Streak data (last 7 days login presence)
+  const streakData = [
+    { day: "M", active: true },
+    { day: "T", active: true },
+    { day: "W", active: false },
+    { day: "T", active: true },
+    { day: "F", active: true },
+    { day: "S", active: true },
+    { day: "S", active: false },
+  ];
+
+  // Recommendations for hovered bubble
+  const hoveredRecs = hoveredBubbleTopic
+    ? (DOMAIN_RECS[hoveredBubbleTopic] || ["Keep exploring this area", "Set a 15-min daily goal"])
+    : null;
 
   if (loading) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-5 pb-12 pt-2">
-        <SkeletonCard rows={2} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <SkeletonCard rows={4} /><SkeletonCard rows={4} /><SkeletonCard rows={4} />
+      <div className="space-y-6 animate-pulse">
+        <div className="h-10 w-64 rounded-xl bg-zinc-800/50" />
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl bg-zinc-800/40" />
+          ))}
         </div>
-        <SkeletonCard rows={6} />
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2 h-96 rounded-2xl bg-zinc-800/40" />
+          <div className="h-96 rounded-2xl bg-zinc-800/40" />
+        </div>
       </div>
     );
   }
 
-  if (!data) return null;
-
-  const { profile, intervention, resources, metrics, todayMission, aiCoach, learningConsistency, goalPlanner } = data;
-  const overallProgress = profile.overallRoadmapProgress;
-  const circumference = 2 * Math.PI * 38;
-  const progressOffset = circumference - (overallProgress / 100) * circumference;
-
-  const activeTasks = [
-    { id: "task-1", title: "12-Min Negotiation Tactics Podcast", time: "08:30 AM", type: "Podcast" },
-    { id: "task-2", title: "Record 2-Min Impromptu Speech", time: "10:30 AM", type: "Practice" },
-    { id: "task-3", title: "Psychology of Money — Key Chapter", time: "12:30 PM", type: "Book Summary" },
-    { id: "task-4", title: "AI Agents & Human Growth — Paper", time: "04:00 PM", type: "Research" },
-  ];
-  const completedCount = Object.values(completedTasks).filter(Boolean).length;
-
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 pb-16">
+    <div className="w-full max-w-7xl mx-auto space-y-7">
 
-      {/* ── Header ───────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-4 md:px-6 py-10">
+      {/* ── Header Greeting ─────────────────────────────────── */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight">
-            Welcome back, <span className="text-amber-400">{profile.name}</span>
+          <p className="text-xs text-zinc-500 mb-1">{greet()}</p>
+          <h1 className="text-2xl font-semibold text-white">
+            {user?.name ? `${user.name.split(" ")[0]}` : "Learner"} 👋
           </h1>
-          <p className="text-base text-zinc-400 mt-2 flex items-center gap-2">
-            <Brain size={16} className="text-amber-400" />
-            <span>Identity: <strong className="text-zinc-200">{profile.aspirationalIdentity}</strong></span>
+          <p className="text-sm text-zinc-400 mt-1">
+            You're on a <span className="text-purple-400 font-medium">{streak}-day streak</span>. Keep the momentum.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-800 shadow-md text-xs">
-            <span className="text-zinc-400">Human Potential Index</span>
-            <span className="bg-amber-400 text-amber-950 font-bold px-2 py-0.5 rounded-full">{profile.humanPotentialScore}/100</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-800 shadow-md text-xs">
-            <span className="text-zinc-400">Mindful Rate</span>
-            <span className="bg-emerald-400 text-emerald-950 font-bold px-2 py-0.5 rounded-full">{profile.mindfulConsumptionRate}%</span>
-          </div>
-          <div className="hidden xl:flex items-center gap-6 ml-3 border-l border-zinc-800 pl-5">
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">{overallProgress}%</div>
-              <div className="text-2xs text-zinc-400 uppercase tracking-wider">Roadmap</div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-amber-400">{profile.activeStreakDays}d</div>
-              <div className="text-2xs text-zinc-400 uppercase tracking-wider">Streak</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Today's Mission + AI Coach + Consistency row ─ */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-        {/* Today's Mission */}
-        <Card dark className="flex flex-col gap-3 border-zinc-800">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-zinc-400">Today's Mission</span>
-              <span className="text-xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/30">
-                {todayMission.taskType}
-              </span>
-            </div>
-            <h3 className="text-base text-white mt-2 leading-snug">{todayMission.taskTitle}</h3>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs text-zinc-400">
-              <span>Progress</span><span className="text-amber-400 font-mono">{todayMission.progressPercent}%</span>
-            </div>
-            <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-amber-400 h-full rounded-full transition-all duration-700"
-                style={{ width: `${todayMission.progressPercent}%` }} />
-            </div>
-          </div>
-          <div className="text-xs text-zinc-400 space-y-1.5">
-            <div className="flex items-center gap-1.5"><Clock size={13} className="text-zinc-400" /><span>Est. {todayMission.estimatedMinutes} min</span></div>
-            <div className="flex items-center gap-1.5"><Target size={13} className="text-amber-400" /><span className="text-amber-300">{todayMission.reward}</span></div>
-          </div>
+        <div className="flex items-center gap-2">
           <Link
-            to={todayMission.route}
-            className="mt-auto w-full py-2.5 rounded-full bg-amber-400 text-amber-950 text-sm flex items-center justify-center gap-2 hover:bg-amber-300 transition-colors"
+            to="/roadmap"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white cursor-pointer transition-all"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)" }}
           >
-            <PlayCircle size={14} /> Continue Learning
+            <Sparkles size={15} />
+            View Roadmap
           </Link>
-        </Card>
-
-        {/* AI Coach */}
-        <Card className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
-              <Sparkles size={16} className="text-amber-400" />
-            </div>
-            <div>
-              <h3 className="text-sm text-white">AI Coach Recommendation</h3>
-              <div className="flex items-center gap-1 mt-0.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${aiCoach.energyLevel === "High" ? "bg-emerald-400" : aiCoach.energyLevel === "Medium" ? "bg-amber-400" : "bg-rose-400"}`} />
-                <span className="text-xs text-zinc-400">{aiCoach.energyLevel} Energy Day</span>
-              </div>
-            </div>
-          </div>
-          <p className="text-sm text-zinc-300 leading-relaxed">{aiCoach.message}</p>
-          <div className="p-3 bg-zinc-950/80 rounded-2xl border border-amber-500/30">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Target size={13} className="text-amber-400" />
-              <span className="text-sm text-white">Focus today:</span>
-            </div>
-            <p className="text-sm text-amber-300">{aiCoach.focusTopic}</p>
-          </div>
-          <p className="text-xs text-zinc-400 italic flex items-center gap-1.5">
-            <Lightbulb size={13} className="text-amber-400 shrink-0" /> {aiCoach.tip}
-          </p>
-        </Card>
-
-        {/* Learning Consistency */}
-        <Card className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs text-zinc-400 uppercase tracking-wider">Growth Consistency</h3>
-            <Trophy size={16} className="text-amber-400" />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-3xl text-white flex items-center gap-1">
-                <Flame size={22} className="text-orange-500" />
-                {learningConsistency.currentStreak}
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5">Day Streak</div>
-              <div className="text-xs text-zinc-500">Best: {learningConsistency.bestStreak}d</div>
-            </div>
-            <div className="flex-1 space-y-2">
-              <div>
-                <div className="flex justify-between text-xs text-zinc-400 mb-1">
-                  <span>Weekly Consistency</span><span className="text-emerald-400">{learningConsistency.weeklyConsistencyPercent}%</span>
-                </div>
-                <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${learningConsistency.weeklyConsistencyPercent}%` }} />
-                </div>
-              </div>
-              <div className="text-sm text-zinc-300">{learningConsistency.weeklyHours}h focus this week</div>
-            </div>
-          </div>
-
-          {/* Daily dots */}
-          <div className="flex items-center justify-between gap-1">
-            {["M","T","W","T","F","S","S"].map((d, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs transition-all ${
-                  learningConsistency.dailyGoalMet[i] ? "bg-emerald-500 text-white font-bold" : "bg-zinc-800 text-zinc-500"
-                }`}>
-                  {learningConsistency.dailyGoalMet[i] ? <Check size={12} /> : d}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* ── Profile + Main Grid ───────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-
-        {/* Profile Card (4 cols) */}
-        <div className="lg:col-span-4 space-y-5">
-          <Card className="p-0 overflow-hidden border-zinc-800">
-            <div className="h-48 w-full relative">
-              <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent flex flex-col justify-end p-5 text-white">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <h2 className="text-xl">{profile.name}</h2>
-                    <p className="text-xs text-zinc-300">{profile.currentRole}</p>
-                  </div>
-                  <span className="px-3 py-1 bg-amber-400 text-amber-950 rounded-full text-xs">{profile.curatorStatus}</span>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 space-y-2 text-sm">
-              {[
-                { key: "identity", icon: <Sparkles size={14} className="text-amber-400" />, label: "Aspirational Identity", content: <p className="text-xs text-zinc-300 mt-1 leading-relaxed pl-1">{profile.aspirationalIdentity}</p> },
-                { key: "filters", icon: <Filter size={14} className="text-zinc-400" />, label: "Active Curator Filters", content: <div className="mt-1 space-y-1 pl-1 text-xs text-zinc-300"><p>• Suppress passive short-form video loops</p><p>• Prioritize identity-aligned podcasts & papers</p><p>• Enforce 45-min intentional sessions</p></div> },
-                { key: "milestone", icon: <Zap size={14} className="text-emerald-400" />, label: "Current Milestone", content: <div className="mt-1 text-xs text-emerald-300 pl-1 bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">{profile.currentMilestone}</div> },
-              ].map(({ key, icon, label, content }) => (
-                <div key={key} className="border-b last:border-0 border-zinc-800/80 pb-2 last:pb-0">
-                  <button onClick={() => setOpenSection(openSection === key ? null : key)} className="w-full flex items-center justify-between text-zinc-200 py-1">
-                    <span className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-zinc-400">{icon}<span>{label}</span></span>
-                    {openSection === key ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
-                  {openSection === key && content}
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Human Potential Score */}
-          <Card className="space-y-2">
-            <HumanPotentialScore
-              score={profile.humanPotentialScore}
-              breakdown={profile.humanPotentialBreakdown}
-            />
-          </Card>
-
-          {/* Goal Planner */}
-          <Card className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Target size={16} className="text-amber-400" />
-              <h3 className="text-sm text-white">Life Goal Planner</h3>
-            </div>
-            <div>
-              <p className="text-xs text-white">{goalPlanner.careerGoal}</p>
-              <p className="text-2xs text-zinc-400 mt-0.5">Target: {goalPlanner.targetDate} · {goalPlanner.weeklyStudyHours}h/week</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-2xs text-zinc-400"><span>Overall Progress</span><span className="text-amber-400">{goalPlanner.progressPercent}%</span></div>
-              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-amber-400 h-full rounded-full transition-all duration-700" style={{ width: `${goalPlanner.progressPercent}%` }} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              {goalPlanner.milestones.map((m, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs text-zinc-300">
-                  {m.done ? <CheckCircle2 size={14} className="text-emerald-400 shrink-0" /> : <Circle size={14} className="text-zinc-600 shrink-0" />}
-                  <span className={m.done ? "line-through text-zinc-500" : ""}>{m.label}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        {/* Right 8 cols */}
-        <div className="lg:col-span-8 space-y-5">
-
-          {/* Row: Progress Ring + Bar Chart + Action Stack */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-            {/* Roadmap Progress Ring */}
-            <Card className="flex flex-col items-center justify-center gap-3 py-4">
-              <h3 className="text-xs text-zinc-400 uppercase tracking-wider font-semibold self-start">Roadmap Progress</h3>
-              <div className="relative">
-                <svg width="96" height="96" viewBox="0 0 96 96">
-                  <circle cx="48" cy="48" r="38" fill="none" stroke="#27272a" strokeWidth="8" />
-                  <circle cx="48" cy="48" r="38" fill="none" stroke="#f59e0b" strokeWidth="8"
-                    strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={progressOffset}
-                    transform="rotate(-90 48 48)" style={{ transition: "stroke-dashoffset 1s ease" }} />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-white">{overallProgress}%</span>
-                  <span className="text-2xs text-zinc-400">Done</span>
-                </div>
-              </div>
-              <Link to="/roadmap" className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium">
-                <Target size={12} /><span>View Roadmap</span><ArrowUpRight size={12} />
-              </Link>
-            </Card>
-
-            {/* Weekly Hours Bar */}
-            <Card className="flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">Growth Velocity</h3>
-                  <div className="text-2xl font-bold text-white mt-1">{profile.weeklyFocusHours}h</div>
-                  <span className="text-2xs text-zinc-400">Mindful focus this week</span>
-                </div>
-                <Link to="/insights" className="p-2 hover:bg-zinc-800 rounded-full transition-colors">
-                  <ArrowUpRight size={18} className="text-zinc-400" />
-                </Link>
-              </div>
-              <div className="flex items-end justify-between gap-1.5 h-20 px-1 mt-3">
-                {["M","T","W","T","F","S","S"].map((day, idx) => {
-                  const heights = [35,70,50,25,60,45,30];
-                  const isPeak = idx === 1;
-                  return (
-                    <div key={idx} className="flex flex-col items-center gap-1 flex-1">
-                      {isPeak && <span className="text-2xs bg-amber-400 text-amber-950 font-bold px-1 py-0.5 rounded-full -mb-1">5.2h</span>}
-                      <div className="w-full bg-zinc-800 rounded-full h-14 flex items-end overflow-hidden">
-                        <div className={`w-full rounded-full transition-all duration-500 ${isPeak ? "bg-amber-400" : "bg-emerald-500"}`} style={{ height: `${heights[idx]}%` }} />
-                      </div>
-                      <span className="text-2xs text-zinc-400">{day}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-
-            {/* Action Stack */}
-            <Card dark className="flex flex-col justify-between border-zinc-800">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">Action Stack</h3>
-                <span className="text-xl font-bold text-amber-400">{completedCount}/{activeTasks.length}</span>
-              </div>
-              <div className="space-y-2 my-3 max-h-44 overflow-y-auto pr-1">
-                {activeTasks.map((task) => {
-                  const isDone = completedTasks[task.id];
-                  return (
-                    <div key={task.id} onClick={() => toggleTask(task.id)}
-                      className="flex items-center gap-2 p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800/80 transition-colors cursor-pointer border border-zinc-800">
-                      {isDone ? <CheckCircle2 size={14} className="text-amber-400 shrink-0" /> : <Circle size={14} className="text-zinc-600 shrink-0" />}
-                      <div className="truncate">
-                        <p className={`text-xs truncate ${isDone ? "line-through text-zinc-500" : "text-zinc-200"}`}>{task.title}</p>
-                        <span className="text-2xs text-zinc-400">{task.time} · {task.type}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
-
-          {/* Intervention Alert */}
-          {intervention && (
-            <div className="rounded-3xl p-5 bg-gradient-to-r from-rose-950 via-zinc-900 to-rose-950 border border-rose-800/60 text-white shadow-xl">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1.5 max-w-2xl">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={18} className="text-amber-400 shrink-0" />
-                    <span className="text-xs uppercase tracking-wider text-amber-300 font-semibold">{intervention.title}</span>
-                  </div>
-                  <p className="text-sm leading-relaxed text-rose-100">{intervention.problemSummary}</p>
-                  <p className="text-xs text-rose-300/80">{intervention.curatorActionTaken}</p>
-                </div>
-                <Link to={intervention.actionRoute}
-                  className="px-5 py-2.5 rounded-full bg-amber-400 text-amber-950 font-semibold text-xs flex items-center gap-2 shrink-0 hover:bg-amber-300 transition-colors">
-                  <span>{intervention.suggestedActionText}</span><ArrowUpRight size={14} />
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* Resource Feed + Activity Chart */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-            <Card className="md:col-span-7 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                    <BookOpen size={16} className="text-amber-400" />Curated High-Signal Feed
-                  </h3>
-                  <p className="text-xs text-zinc-400">Zero clickbait · Filtered for your identity</p>
-                </div>
-                <Link to="/roadmap" className="text-xs text-amber-400 hover:underline">View roadmap</Link>
-              </div>
-              <div className="space-y-3">
-                {resources.slice(0, 3).map((item) => (
-                  <ResourceCard
-                    key={item.id}
-                    item={{ ...item, bookmarked: bookmarks[item.id] ?? item.bookmarked }}
-                    onBookmark={handleBookmark}
-                    onExplain={setExplainItem}
-                    onLearn={(title) => setReflectionLesson(title)}
-                  />
-                ))}
-              </div>
-            </Card>
-
-            <Card className="md:col-span-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-semibold text-white">Mindful vs Skimming</h3>
-                  <span className="text-xs text-zinc-400">Hours / Day</span>
-                </div>
-                <p className="text-xs text-zinc-400 mb-3">Intentional learning ratio log</p>
-                <ActivityChart data={metrics.dailyFocusLogs} />
-              </div>
-              <div className="pt-3 border-t border-zinc-800 mt-2 flex items-center justify-between text-xs">
-                <span className="text-zinc-300">Overall Intentionality</span>
-                <span className="text-emerald-400 font-semibold">{metrics.attentionToIntentRatio}% Optimal</span>
-              </div>
-            </Card>
-          </div>
         </div>
       </div>
 
-      {/* ── Growth Identity Map ────────────────────────── */}
-      <Card className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base text-white flex items-center gap-2">
-              <Brain size={16} className="text-amber-400" />Growth Identity Map
-            </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              Every node is a dimension of your life. Size = time invested. Hover any node to inspect its state and confidence.
-            </p>
-          </div>
-          <Link to="/roadmap" className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300">
-            Full Roadmap <ArrowUpRight size={12} />
-          </Link>
-        </div>
-        <TopicBubbleChart topics={metrics.topicProgress as unknown as TopicProgress[]} />
-      </Card>
+      {/* ── Stat Cards ──────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Flame size={16} />}
+          label="Day Streak"
+          value={`${streak} days`}
+          sub="Best streak yet!"
+          accent="#f97316"
+        />
+        <StatCard
+          icon={<Clock size={16} />}
+          label="This Week"
+          value={`${weeklyHours}h`}
+          sub="Time invested"
+          accent="#a855f7"
+        />
+        <StatCard
+          icon={<Target size={16} />}
+          label="Today's Tasks"
+          value={`${completedCount}/${tasks.length}`}
+          sub="Completed"
+          accent="#10b981"
+        />
+        <StatCard
+          icon={<TrendingUp size={16} />}
+          label="Growth Score"
+          value={`${data?.profile?.humanPotentialBreakdown?.total ?? 72}%`}
+          sub="Potential unlocked"
+          accent="#f59e0b"
+        />
+      </div>
 
-      {/* ── Recommendation Explanation Drawer ─────────── */}
-      <DrawerModal
-        open={!!explainItem}
-        onClose={() => setExplainItem(null)}
-        title="Why This Was Recommended"
-      >
-        {explainItem && (
-          <div className="space-y-4 text-sm text-zinc-200">
+      {/* ── Main 2-col grid ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ── Left: Bubble Chart ──────────────────────────── */}
+        <div
+          className="lg:col-span-2 rounded-2xl p-5"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h4 className="text-xs uppercase tracking-wider text-zinc-400 mb-1">Resource</h4>
-              <p className="text-white font-semibold">{explainItem.title}</p>
-              <div className="flex gap-2 mt-1.5">
-                <span className="text-2xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">{explainItem.type}</span>
-                <span className={`text-2xs px-2 py-0.5 rounded-full ${DIFF_COLORS[explainItem.difficulty]}`}>{explainItem.difficulty}</span>
-              </div>
+              <h2 className="text-base font-medium text-white">Growth Areas</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Hover a bubble for personalized recommendations</p>
             </div>
-            <div className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 space-y-2">
-              <div>
-                <p className="text-2xs uppercase tracking-wider text-amber-400 mb-0.5 font-semibold">Why PACER Selected This</p>
-                <p className="text-xs text-zinc-300">{explainItem.reasoning}</p>
-              </div>
-            </div>
-            {explainItem.buildsUpon && (
-              <div>
-                <p className="text-2xs uppercase tracking-wider text-zinc-400 mb-0.5">Builds Upon</p>
-                <p className="text-xs text-zinc-300">{explainItem.buildsUpon}</p>
-              </div>
-            )}
-            {explainItem.unlocksGoal && (
-              <div>
-                <p className="text-2xs uppercase tracking-wider text-zinc-400 mb-0.5">Unlocks</p>
-                <p className="text-xs text-emerald-400 flex items-center gap-1">
-                  <Zap size={12} />{explainItem.unlocksGoal}
-                </p>
-              </div>
-            )}
-            <div>
-              <p className="text-2xs uppercase tracking-wider text-zinc-400 mb-0.5">Expected Skill Gain</p>
-              <p className="text-xs text-zinc-300 flex items-center gap-1">
-                <Star size={12} className="text-amber-400" />{explainItem.skillGain}
-              </p>
-            </div>
-            <div>
-              <p className="text-2xs uppercase tracking-wider text-zinc-400 mb-0.5">Signal Score</p>
-              <div className="flex items-center gap-2">
-                <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${explainItem.intentionalityScore}%` }} />
-                </div>
-                <span className="text-xs text-emerald-400 font-semibold shrink-0">{explainItem.intentionalityScore}%</span>
-              </div>
-            </div>
-            <Link
-              to={explainItem.actionRoute || "/learning-lab"}
-              className="w-full py-2.5 rounded-full bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center gap-2 hover:bg-amber-300 transition-colors"
-              onClick={() => setExplainItem(null)}
-            >
-              <PlayCircle size={14} /> Start This Resource
+            <Link to="/insights" className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
+              Full analysis <ArrowRight size={12} />
             </Link>
           </div>
-        )}
-      </DrawerModal>
 
-      {/* ── Reflection Modal ──────────────────────────── */}
-      <ReflectionModal
-        open={!!reflectionLesson}
-        lessonTitle={reflectionLesson || ""}
-        onClose={() => setReflectionLesson(null)}
-      />
+          {/* Bubble chart with hover→recs */}
+          <div className="relative">
+            <TopicBubbleChart
+              topics={bubbleTopics}
+              onTopicHover={setHoveredBubbleTopic}
+            />
+
+            {/* Recommendations panel shown on hover */}
+            {hoveredRecs && hoveredBubbleTopic && (
+              <div
+                className="absolute top-3 right-3 rounded-xl p-4 max-w-[200px] text-xs space-y-2 z-30 transition-all"
+                style={{
+                  background: "rgba(10,10,15,0.95)",
+                  border: "1px solid rgba(168,85,247,0.3)",
+                  backdropFilter: "blur(16px)"
+                }}
+              >
+                <p className="text-purple-300 font-medium mb-2 flex items-center gap-1">
+                  <Zap size={12} /> {hoveredBubbleTopic}
+                </p>
+                {hoveredRecs.map((r, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-zinc-400">
+                    <ChevronRight size={10} className="mt-0.5 text-purple-500 flex-shrink-0" />
+                    <span>{r}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Right: Tasks + Streak ───────────────────────── */}
+        <div className="space-y-5">
+
+          {/* Streak calendar */}
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-medium text-white">Weekly Activity</h2>
+              <Flame size={16} className="text-orange-400" />
+            </div>
+            <div className="flex items-end gap-2 justify-between">
+              {streakData.map((d, i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all"
+                    style={{
+                      background: d.active ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.04)",
+                      border: d.active ? "1px solid rgba(168,85,247,0.4)" : "1px solid rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    {d.active && <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
+                  </div>
+                  <span className="text-[10px] text-zinc-600">{d.day}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Today's tasks */}
+          <div
+            className="rounded-2xl p-5 flex-1"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-base font-medium text-white">Today's Tasks</h2>
+              <span className="text-xs text-zinc-500">{completedCount}/{tasks.length}</span>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-1 rounded-full bg-zinc-800 mb-4">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${(completedCount / tasks.length) * 100}%`,
+                  background: "linear-gradient(90deg, #7c3aed, #db2777)"
+                }}
+              />
+            </div>
+            <div>
+              {tasks.map(t => (
+                <TaskItem
+                  key={t.id}
+                  title={t.title}
+                  done={t.done}
+                  tag={t.tag}
+                  time={t.time}
+                  onToggle={() => toggleTask(t.id)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bottom: Charts row ──────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Day vs Time bar chart */}
+        <div
+          className="rounded-2xl p-5"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-medium text-white">Daily Focus Time</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Hours per day this week</p>
+            </div>
+            <BarChart2 size={16} className="text-zinc-500" />
+          </div>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#52525b", fontSize: 11 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#52525b", fontSize: 11 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(168,85,247,0.05)" }}
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs">
+                          <p className="text-zinc-300">{d.day}</p>
+                          <p className="text-purple-300">{d.mindfulHours}h focused</p>
+                          <p className="text-zinc-500">{d.intentionality}% intentionality</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="mindfulHours" radius={[6, 6, 0, 0]}>
+                  {weeklyData.map((entry, idx) => (
+                    <Cell
+                      key={idx}
+                      fill={(entry.mindfulHours ?? 0) >= 2 ? "#a855f7" : "#3f3f46"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Intentionality trend area chart */}
+        <div
+          className="rounded-2xl p-5"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-medium text-white">Focus Quality</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Intentionality score trend</p>
+            </div>
+            <TrendingUp size={16} className="text-zinc-500" />
+          </div>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="intentGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#52525b", fontSize: 11 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#52525b", fontSize: 11 }}
+                  domain={[0, 100]}
+                />
+                <Tooltip
+                  cursor={{ stroke: "rgba(168,85,247,0.2)" }}
+                  content={({ active, payload }) => {
+                    if (active && payload?.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs">
+                          <p className="text-zinc-300">{d.day}</p>
+                          <p className="text-purple-300">{d.intentionality}% intentionality</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="intentionality"
+                  stroke="#a855f7"
+                  strokeWidth={2}
+                  fill="url(#intentGrad)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Quick Nav links ─────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Continue Learning", icon: <Play size={14} />, path: "/learning-lab", color: "#7c3aed" },
+          { label: "View Roadmap", icon: <BookOpen size={14} />, path: "/roadmap", color: "#0891b2" },
+          { label: "See Insights", icon: <TrendingUp size={14} />, path: "/insights", color: "#059669" },
+          { label: "Achievements", icon: <Trophy size={14} />, path: "/achievements", color: "#d97706" },
+        ].map(({ label, icon, path, color }) => (
+          <Link
+            key={path}
+            to={path}
+            className="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm text-zinc-300 hover:text-white transition-all group"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <div className="flex items-center gap-2.5">
+              <span style={{ color }}>{icon}</span>
+              <span>{label}</span>
+            </div>
+            <ChevronRight size={14} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };

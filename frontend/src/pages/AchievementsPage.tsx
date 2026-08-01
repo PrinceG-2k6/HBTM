@@ -41,8 +41,8 @@ export const AchievementsPage: React.FC = () => {
   if (!data) return null;
 
   const { achievements, totalXP, unlockedCount } = data;
-  const filtered = filter === "unlocked" ? achievements.filter(a => a.unlocked)
-    : filter === "locked" ? achievements.filter(a => !a.unlocked)
+  const filtered = filter === "unlocked" ? achievements.filter((a: any) => a.unlocked)
+    : filter === "locked" ? achievements.filter((a: any) => !a.unlocked)
     : achievements;
 
   return (
@@ -84,7 +84,7 @@ export const AchievementsPage: React.FC = () => {
           </div>
           <div>
             <div className="text-2xs text-gray-500 uppercase tracking-wider">In Progress</div>
-            <div className="text-3xl text-gray-900">{achievements.filter(a => !a.unlocked && (a.progressCurrent ?? 0) > 0).length}</div>
+            <div className="text-3xl text-gray-900">{achievements.filter((a: any) => !a.unlocked && (a.progressCurrent ?? 0) > 0).length}</div>
           </div>
         </Card>
       </div>
@@ -103,7 +103,7 @@ export const AchievementsPage: React.FC = () => {
 
       {/* Achievement cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        {filtered.map(ach => (
+        {filtered.map((ach: any) => (
           <Card key={ach.id}
             className={`flex flex-col gap-3 border-2 transition-all ${
               ach.unlocked

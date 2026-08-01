@@ -70,13 +70,13 @@ export const RoadmapPage: React.FC = () => {
 
   const { stages, adaptedCount } = data;
 
-  const filtered = filter === "adapted" ? stages.filter(s => s.status === "ai-adapted") : stages;
+  const filtered = filter === "adapted" ? stages.filter((s: any) => s.status === "ai-adapted") : stages;
   const searched = searchQuery
-    ? filtered.filter(s => s.title.toLowerCase().includes(searchQuery.toLowerCase()) || s.items.some(i => i.title.toLowerCase().includes(searchQuery.toLowerCase())))
+    ? filtered.filter((s: any) => s.title.toLowerCase().includes(searchQuery.toLowerCase()) || (s.items || []).some((i: any) => i.title.toLowerCase().includes(searchQuery.toLowerCase())))
     : filtered;
 
-  const overallProgress = Math.round(stages.reduce((s, st) => s + st.progressPercent, 0) / stages.length);
-  const bubbleTopics = activeStageId ? topicProgress.filter(t => t.relatedStageId === activeStageId) : topicProgress;
+  const overallProgress = Math.round(stages.reduce((s: number, st: any) => s + (st.progressPercent || 0), 0) / (stages.length || 1));
+  const bubbleTopics = activeStageId ? topicProgress.filter((t: any) => t.relatedStageId === activeStageId) : topicProgress;
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 pb-16">
@@ -130,7 +130,7 @@ export const RoadmapPage: React.FC = () => {
           <div>
             <div className="text-xs text-gray-500 uppercase tracking-wider">Overall Progress</div>
             <div className="text-base text-gray-900 mt-0.5">Roadmap Completion</div>
-            <div className="text-xs text-gray-500">{stages.filter(s => s.status === "completed").length}/{stages.length} stages done</div>
+            <div className="text-xs text-gray-500">{stages.filter((s: any) => s.status === "completed").length}/{stages.length} stages done</div>
           </div>
         </Card>
 
@@ -140,9 +140,9 @@ export const RoadmapPage: React.FC = () => {
           </div>
           <div>
             <div className="text-xs text-gray-500 uppercase tracking-wider">Active Stage</div>
-            <div className="text-sm text-gray-900 mt-0.5">{stages.find(s => s.status === "in-progress")?.title.split(" ").slice(0, 3).join(" ") ?? "–"}</div>
+            <div className="text-sm text-gray-900 mt-0.5">{stages.find((s: any) => s.status === "in-progress")?.title.split(" ").slice(0, 3).join(" ") ?? "–"}</div>
             <div className="text-xs text-amber-700 mt-0.5 flex items-center gap-1">
-              <Clock size={10} />{stages.find(s => s.status === "in-progress")?.remainingDays} days remaining
+              <Clock size={10} />{stages.find((s: any) => s.status === "in-progress")?.remainingDays || 0} days remaining
             </div>
           </div>
         </Card>
@@ -154,7 +154,7 @@ export const RoadmapPage: React.FC = () => {
           <div>
             <div className="text-xs text-gray-500 uppercase tracking-wider">Topics Tracked</div>
             <div className="text-base text-gray-900 mt-0.5">{topicProgress.length} Topics</div>
-            <div className="text-xs text-gray-500 mt-0.5">{topicProgress.filter(t => t.completedPercent === 100).length} fully mastered</div>
+            <div className="text-xs text-gray-500 mt-0.5">{topicProgress.filter((t: any) => t.completedPercent === 100).length} fully mastered</div>
           </div>
         </Card>
       </div>
@@ -169,8 +169,8 @@ export const RoadmapPage: React.FC = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-5">
-          {searched.map((stage) => {
-            const sched = SCHEDULE_STYLES[stage.scheduleStatus];
+          {searched.map((stage: any) => {
+            const sched = SCHEDULE_STYLES[stage.scheduleStatus as keyof typeof SCHEDULE_STYLES] || SCHEDULE_STYLES["on-track"];
             const isExpanded = expandedStageId === stage.id;
             return (
               <Card key={stage.id}
@@ -180,7 +180,7 @@ export const RoadmapPage: React.FC = () => {
                 {/* Stage Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-2xl bg-black text-white flex items-center justify-center text-xs">S{stage.stageNumber}</div>
+                    <div className="w-8 h-8 rounded-2xl bg-black text-white flex items-center justify-center text-xs">S{stage.stageNumber || 1}</div>
                     <div>
                       <h3 className="text-base text-gray-900">{stage.title}</h3>
                       <p className="text-sm text-gray-500">{stage.description}</p>
@@ -198,23 +198,23 @@ export const RoadmapPage: React.FC = () => {
 
                 {/* Time info */}
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <span className="flex items-center gap-1"><Clock size={13} className="text-gray-400" />{stage.estimatedDays}d estimated</span>
-                  {stage.remainingDays > 0 && <span className="flex items-center gap-1 text-amber-700"><Target size={13} />{stage.remainingDays}d remaining</span>}
+                  <span className="flex items-center gap-1"><Clock size={13} className="text-gray-400" />{stage.estimatedDays || 14}d estimated</span>
+                  {(stage.remainingDays || 0) > 0 && <span className="flex items-center gap-1 text-amber-700"><Target size={13} />{stage.remainingDays}d remaining</span>}
                 </div>
 
                 {/* Progress bar */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-gray-600">
-                    <span>Stage Completion</span><span>{stage.progressPercent}%</span>
+                    <span>Stage Completion</span><span>{stage.progressPercent || 0}%</span>
                   </div>
                   <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${stage.progressPercent}%` }} />
+                    <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${stage.progressPercent || 0}%` }} />
                   </div>
                 </div>
 
                 {/* Topic pills */}
                 <div className="flex flex-wrap gap-2">
-                  {topicProgress.filter(t => t.relatedStageId === stage.id).map(t => (
+                  {topicProgress.filter((t: any) => t.relatedStageId === stage.id).map((t: any) => (
                     <span key={t.id} className="inline-flex items-center gap-1.5 text-xs bg-white/80 border border-black/10 rounded-full px-2.5 py-1">
                       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: t.completedPercent >= 80 ? "#22c55e" : t.completedPercent >= 50 ? "#f59e0b" : "#9ca3af" }} />
                       {t.name}<span className="text-gray-400">{t.completedPercent}%</span>
@@ -236,7 +236,7 @@ export const RoadmapPage: React.FC = () => {
                     <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200">
                       <p className="text-xs uppercase tracking-wider text-emerald-700 mb-1.5">Skills Gained</p>
                       <div className="space-y-1.5">
-                        {stage.skillsGained.map(s => (
+                        {(stage.skillsGained || []).map((s: any) => (
                           <div key={s} className="flex items-center gap-1.5 text-sm text-emerald-800">
                             <CheckCircle2 size={12} className="shrink-0" />{s}
                           </div>
@@ -246,7 +246,7 @@ export const RoadmapPage: React.FC = () => {
                     <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
                       <p className="text-xs uppercase tracking-wider text-amber-700 mb-1.5">Prerequisites</p>
                       <div className="space-y-1.5">
-                        {stage.prerequisites.map(p => (
+                        {(stage.prerequisites || []).map((p: any) => (
                           <div key={p} className="flex items-center gap-1.5 text-sm text-amber-800">
                             <div className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />{p}
                           </div>
@@ -262,7 +262,7 @@ export const RoadmapPage: React.FC = () => {
 
                 {/* Stage Items */}
                 <div className="space-y-3 pt-1">
-                  {stage.items.map((item) => (
+                  {(stage.items || []).map((item: any) => (
                     <div key={item.id} className="p-3.5 rounded-2xl bg-white/60 border border-gray-200/80 hover:border-black/20 transition-all">
                       <div className="flex items-start justify-between gap-3">
                         <div>

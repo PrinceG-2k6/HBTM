@@ -1,113 +1,162 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { authApi } from "../api/axiosClient";
+
+export interface UserOnboarding {
+  currentSelf: string[];
+  imagineSelf: string[];
+  learningStyles: string[];
+  aspirationFocus: string[];
+  mediaPreferences: string[];
+  dailyCommitmentMinutes: number;
+  isOnboarded: boolean;
+}
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
-  avatarUrl: string;
+  role?: string;
+  avatarUrl?: string;
   authProvider: "jwt" | "google";
+  onboarding?: UserOnboarding;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  loginWithJWT: (email: string, pass: string) => Promise<boolean>;
-  signupWithJWT: (name: string, email: string, pass: string, role: string) => Promise<boolean>;
-  loginWithGoogle: () => Promise<boolean>;
+  loginWithJWT: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  signupWithJWT: (name: string, email: string, pass: string, role?: string, onboarding?: any) => Promise<{ success: boolean; message?: string }>;
+  loginWithGoogle: (credentialResponse?: any) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  updateUserOnboarding: (onboardingData: UserOnboarding) => void;
 }
 
-const DEFAULT_USER: User = {
-  id: "usr-101",
-  name: "Prince",
-  email: "prince@pacer.ai",
-  role: "AI Systems Founder & Cognitive Engineer",
-  avatarUrl: "https://media.istockphoto.com/id/1791833349/photo/student-university-and-portrait-of-black-woman-in-library-for-learning-education-and-reading.jpg?s=612x612&w=0&k=20&c=itaBSNJVOXsvG0POV3cTlyVIi9FbzC9YGdwcNsFf914=",
-  authProvider: "jwt",
-};
-
 const AuthContext = createContext<AuthContextType>({
-  user: DEFAULT_USER,
-  token: "mock-jwt-token",
-  isAuthenticated: true,
-  loginWithJWT: async () => true,
-  signupWithJWT: async () => true,
-  loginWithGoogle: async () => true,
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  loginWithJWT: async () => ({ success: false }),
+  signupWithJWT: async () => ({ success: false }),
+  loginWithGoogle: async () => ({ success: false }),
   logout: () => {},
+  updateUserOnboarding: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem("pacer_user");
-    return saved ? JSON.parse(saved) : DEFAULT_USER;
+    try {
+      const saved = localStorage.getItem("hbtm_user");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("pacer_token") || "mock-jwt-token-xyz987";
+    return localStorage.getItem("hbtm_token") || null;
   });
 
   useEffect(() => {
     if (user && token) {
-      localStorage.setItem("pacer_user", JSON.stringify(user));
-      localStorage.setItem("pacer_token", token);
+      localStorage.setItem("hbtm_user", JSON.stringify(user));
+      localStorage.setItem("hbtm_token", token);
     } else {
-      localStorage.removeItem("pacer_user");
-      localStorage.removeItem("pacer_token");
+      localStorage.removeItem("hbtm_user");
+      localStorage.removeItem("hbtm_token");
     }
   }, [user, token]);
 
-  const loginWithJWT = async (email: string): Promise<boolean> => {
-    // Simulate JWT network call
-    await new Promise((res) => setTimeout(res, 600));
-    const loggedUser: User = {
-      ...DEFAULT_USER,
-      email: email || DEFAULT_USER.email,
-      name: email.split("@")[0] ? email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1) : "Prince",
-      authProvider: "jwt",
-    };
-    const newToken = `jwt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    setUser(loggedUser);
-    setToken(newToken);
-    return true;
+  const loginWithJWT = async (email: string, pass: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await authApi.login({ email, password: pass });
+      if (res.token && res.user) {
+        const formattedUser: User = {
+          id: res.user.id || res.user._id,
+          name: res.user.name,
+          email: res.user.email,
+          role: res.user.role,
+          avatarUrl: res.user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+          authProvider: "jwt",
+          onboarding: res.user.onboarding,
+        };
+        setUser(formattedUser);
+        setToken(res.token);
+        return { success: true };
+      }
+      return { success: false, message: res.message || "Invalid credentials" };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || "Login failed" };
+    }
   };
 
-  const signupWithJWT = async (name: string, email: string, _pass: string, role: string): Promise<boolean> => {
-    await new Promise((res) => setTimeout(res, 700));
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      name: name || "Learner",
-      email: email || "user@pacer.ai",
-      role: role || "AI Research Engineer",
-      avatarUrl: DEFAULT_USER.avatarUrl,
-      authProvider: "jwt",
-    };
-    const newToken = `jwt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    setUser(newUser);
-    setToken(newToken);
-    return true;
+  const signupWithJWT = async (name: string, email: string, pass: string, role?: string, onboarding?: any): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await authApi.register({ name, email, password: pass, role, onboarding });
+      if (res.token && res.user) {
+        const formattedUser: User = {
+          id: res.user.id || res.user._id,
+          name: res.user.name,
+          email: res.user.email,
+          role: res.user.role,
+          avatarUrl: res.user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+          authProvider: "jwt",
+          onboarding: res.user.onboarding,
+        };
+        setUser(formattedUser);
+        setToken(res.token);
+        return { success: true };
+      }
+      return { success: false, message: res.message || "Registration failed" };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || "Registration failed" };
+    }
   };
 
-  const loginWithGoogle = async (): Promise<boolean> => {
-    await new Promise((res) => setTimeout(res, 800));
-    const googleUser: User = {
-      id: `usr-g-${Date.now()}`,
-      name: "Prince (Google)",
-      email: "prince.google@gmail.com",
-      role: "AI Systems Founder & Cognitive Engineer",
-      avatarUrl: DEFAULT_USER.avatarUrl,
-      authProvider: "google",
-    };
-    const googleToken = `oauth_google_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    setUser(googleUser);
-    setToken(googleToken);
-    return true;
+  const loginWithGoogle = async (credentialResponse?: any): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const googleToken = credentialResponse?.credential || `google_token_${Date.now()}`;
+      const res = await authApi.googleAuth({
+        googleToken,
+        name: credentialResponse?.name || "Google User",
+        email: credentialResponse?.email || `google_${Date.now()}@gmail.com`,
+        avatarUrl: credentialResponse?.picture,
+        onboarding: credentialResponse?.onboarding,
+      });
+
+      if (res.token && res.user) {
+        const formattedUser: User = {
+          id: res.user.id || res.user._id,
+          name: res.user.name,
+          email: res.user.email,
+          role: res.user.role,
+          avatarUrl: res.user.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+          authProvider: "google",
+          onboarding: res.user.onboarding,
+        };
+        setUser(formattedUser);
+        setToken(res.token);
+        return { success: true };
+      }
+      return { success: false, message: res.message || "Google Auth failed" };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || "Google Auth failed" };
+    }
+  };
+
+  const updateUserOnboarding = (onboardingData: UserOnboarding) => {
+    if (user) {
+      const updatedUser = { ...user, onboarding: onboardingData };
+      setUser(updatedUser);
+      localStorage.setItem("hbtm_user", JSON.stringify(updatedUser));
+    }
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem("hbtm_user");
+    localStorage.removeItem("hbtm_token");
   };
 
   return (
@@ -120,6 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signupWithJWT,
         loginWithGoogle,
         logout,
+        updateUserOnboarding,
       }}
     >
       {children}

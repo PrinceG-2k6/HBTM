@@ -26,7 +26,7 @@ export const LandingPage: React.FC = () => {
 
         {/* ── 1. Hero Section ─────────────────────────────── */}
         <div className="flex flex-col items-center text-center space-y-8 pt-10 max-w-3xl mx-auto">
-          
+
           {/* Announcement Pill */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-zinc-300 text-xs backdrop-blur-xl hover:border-amber-400/50 transition-all cursor-pointer shadow-lg group">
             <Sparkles size={14} className="text-amber-400 group-hover:rotate-12 transition-transform" />
@@ -115,11 +115,10 @@ export const LandingPage: React.FC = () => {
                 <button
                   key={sim}
                   onClick={() => setActiveSim(sim)}
-                  className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer capitalize text-xs ${
-                    activeSim === sim
+                  className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer capitalize text-xs ${activeSim === sim
                       ? "bg-amber-400 text-amber-950 shadow-md"
                       : "text-zinc-400 hover:text-white"
-                  }`}
+                    }`}
                 >
                   {sim === "signal" ? "Signal Filter" : sim === "adaptive" ? "Dynamic Roadmap" : "Vector Identity"}
                 </button>

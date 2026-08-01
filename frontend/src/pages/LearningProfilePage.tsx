@@ -38,7 +38,7 @@ export const LearningProfilePage: React.FC = () => {
     setSubmitting(true);
     try {
       const updated = await apiService.addMemoryVector({ category: newCategory, statement: newStatement });
-      setProfileData(d => d ? { ...d, memoryVectors: updated } : d);
+      setProfileData((d: any) => d ? { ...d, memoryVectors: updated } : d);
       setNewStatement("");
       setShowAddForm(false);
     } catch (err) {
@@ -52,7 +52,7 @@ export const LearningProfilePage: React.FC = () => {
     setSavingPrefs(true);
     try {
       const updated = await apiService.updatePreferences(prefs);
-      setProfileData(d => d ? { ...d, preferences: updated } : d);
+      setProfileData((d: any) => d ? { ...d, preferences: updated } : d);
       setEditingPrefs(false);
     } catch (err) {
       console.error(err);
@@ -142,15 +142,15 @@ export const LearningProfilePage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-2">
-              {aiKnows.map(fact => (
-                <div key={fact.id} className="p-3 rounded-2xl bg-white/80 border border-black/5 hover:border-amber-200 transition-all">
+              {aiKnows.map((fact: any) => (
+                <div key={fact.id || fact.fact} className="p-3 rounded-2xl bg-white/80 border border-black/5 hover:border-amber-200 transition-all">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs text-gray-800 leading-relaxed">"{fact.fact}"</p>
-                    <span className="text-2xs text-emerald-700 shrink-0">{fact.confidenceLevel}%</span>
+                    <span className="text-2xs text-emerald-700 shrink-0">{fact.confidenceLevel || fact.confidence}%</span>
                   </div>
                   <div className="mt-1.5">
                     <div className="w-full bg-gray-200 h-1 rounded-full overflow-hidden">
-                      <div className="bg-amber-400 h-full rounded-full" style={{ width: `${fact.confidenceLevel}%` }} />
+                      <div className="bg-amber-400 h-full rounded-full" style={{ width: `${fact.confidenceLevel || fact.confidence}%` }} />
                     </div>
                     <span className="text-2xs text-gray-400 mt-0.5 block">{fact.category}</span>
                   </div>
@@ -223,7 +223,7 @@ export const LearningProfilePage: React.FC = () => {
             Identity Memory Vectors
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {memoryVectors.map(node => (
+            {memoryVectors.map((node: any) => (
               <Card key={node.id} className="flex flex-col justify-between space-y-3 border-white/80">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">

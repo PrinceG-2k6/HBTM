@@ -183,7 +183,7 @@ export const RoadmapPage: React.FC = () => {
                     <div className="w-8 h-8 rounded-2xl bg-black text-white flex items-center justify-center text-xs">S{stage.stageNumber}</div>
                     <div>
                       <h3 className="text-base text-gray-900">{stage.title}</h3>
-                      <p className="text-xs text-gray-500">{stage.description}</p>
+                      <p className="text-sm text-gray-500">{stage.description}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -197,14 +197,14 @@ export const RoadmapPage: React.FC = () => {
                 </div>
 
                 {/* Time info */}
-                <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-                  <span className="flex items-center gap-1"><Clock size={12} className="text-gray-400" />{stage.estimatedDays}d estimated</span>
-                  {stage.remainingDays > 0 && <span className="flex items-center gap-1 text-amber-700"><Target size={12} />{stage.remainingDays}d remaining</span>}
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  <span className="flex items-center gap-1"><Clock size={13} className="text-gray-400" />{stage.estimatedDays}d estimated</span>
+                  {stage.remainingDays > 0 && <span className="flex items-center gap-1 text-amber-700"><Target size={13} />{stage.remainingDays}d remaining</span>}
                 </div>
 
                 {/* Progress bar */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-2xs text-gray-600">
+                  <div className="flex justify-between text-xs text-gray-600">
                     <span>Stage Completion</span><span>{stage.progressPercent}%</span>
                   </div>
                   <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
@@ -215,7 +215,7 @@ export const RoadmapPage: React.FC = () => {
                 {/* Topic pills */}
                 <div className="flex flex-wrap gap-2">
                   {topicProgress.filter(t => t.relatedStageId === stage.id).map(t => (
-                    <span key={t.id} className="inline-flex items-center gap-1.5 text-2xs bg-white/80 border border-black/10 rounded-full px-2.5 py-1">
+                    <span key={t.id} className="inline-flex items-center gap-1.5 text-xs bg-white/80 border border-black/10 rounded-full px-2.5 py-1">
                       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: t.completedPercent >= 80 ? "#22c55e" : t.completedPercent >= 50 ? "#f59e0b" : "#9ca3af" }} />
                       {t.name}<span className="text-gray-400">{t.completedPercent}%</span>
                     </span>
@@ -233,29 +233,29 @@ export const RoadmapPage: React.FC = () => {
 
                 {isExpanded && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1" onClick={e => e.stopPropagation()}>
-                    <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
-                      <p className="text-2xs uppercase tracking-wider text-emerald-700 mb-1.5">Skills Gained</p>
-                      <div className="space-y-1">
+                    <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200">
+                      <p className="text-xs uppercase tracking-wider text-emerald-700 mb-1.5">Skills Gained</p>
+                      <div className="space-y-1.5">
                         {stage.skillsGained.map(s => (
-                          <div key={s} className="flex items-center gap-1.5 text-xs text-emerald-800">
-                            <CheckCircle2 size={11} className="shrink-0" />{s}
+                          <div key={s} className="flex items-center gap-1.5 text-sm text-emerald-800">
+                            <CheckCircle2 size={12} className="shrink-0" />{s}
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200">
-                      <p className="text-2xs uppercase tracking-wider text-amber-700 mb-1.5">Prerequisites</p>
-                      <div className="space-y-1">
+                    <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
+                      <p className="text-xs uppercase tracking-wider text-amber-700 mb-1.5">Prerequisites</p>
+                      <div className="space-y-1.5">
                         {stage.prerequisites.map(p => (
-                          <div key={p} className="flex items-center gap-1.5 text-xs text-amber-800">
+                          <div key={p} className="flex items-center gap-1.5 text-sm text-amber-800">
                             <div className="w-1 h-1 rounded-full bg-amber-500 shrink-0" />{p}
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200">
-                      <p className="text-2xs uppercase tracking-wider text-zinc-600 mb-1.5">Career Impact</p>
-                      <p className="text-xs text-zinc-700 leading-relaxed">{stage.careerImpact}</p>
+                    <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600 mb-1.5">Career Impact</p>
+                      <p className="text-sm text-zinc-700 leading-relaxed">{stage.careerImpact}</p>
                     </div>
                   </div>
                 )}
@@ -267,20 +267,20 @@ export const RoadmapPage: React.FC = () => {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-2xs bg-zinc-900 text-white px-2 py-0.5 rounded-full">{item.type}</span>
-                            <span className="text-2xs text-gray-500">{item.estTime}</span>
-                            <span className="text-2xs text-emerald-700">{item.skillGain}</span>
+                            <span className="text-xs bg-zinc-900 text-white px-2 py-0.5 rounded-full">{item.type}</span>
+                            <span className="text-xs text-gray-500">{item.estTime}</span>
+                            <span className="text-xs text-emerald-700">{item.skillGain}</span>
                           </div>
-                          <h4 className="text-sm text-gray-900 mt-1">{item.title}</h4>
-                          <p className="text-xs text-gray-600 mt-0.5"><strong className="text-gray-900">Curator Logic:</strong> {item.reasoning}</p>
+                          <h4 className="text-base text-gray-900 mt-1.5">{item.title}</h4>
+                          <p className="text-sm text-gray-600 mt-0.5"><strong className="text-gray-900">Curator Logic:</strong> {item.reasoning}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 text-2xs">
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 text-xs">
                         <span className="text-emerald-700 flex items-center gap-1">
-                          <ShieldCheck size={12} />{item.intentionalityScore}% Signal
+                          <ShieldCheck size={13} />{item.intentionalityScore}% Signal
                         </span>
-                        <Link to="/learning-lab" className="px-3 py-1 rounded-full bg-black text-white text-2xs hover:bg-gray-800 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                          <PlayCircle size={10} />Open Interactive<ExternalLink size={10} />
+                        <Link to="/learning-lab" className="px-3 py-1.5 rounded-full bg-black text-white text-xs hover:bg-gray-800 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <PlayCircle size={12} />Open<ExternalLink size={11} />
                         </Link>
                       </div>
                     </div>

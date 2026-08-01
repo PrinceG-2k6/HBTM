@@ -75,22 +75,22 @@ export const OpportunitiesPage: React.FC = () => {
           <Card key={opp.id} className="flex flex-col justify-between space-y-3 border-white/80 hover:shadow-md transition-all">
             <div>
               <div className="flex items-start justify-between gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-2xs ${TYPE_COLORS[opp.type] || "bg-gray-100 text-gray-700"}`}>{opp.type}</span>
+                <span className={`px-2.5 py-1 rounded-full text-xs ${TYPE_COLORS[opp.type] || "bg-gray-100 text-gray-700"}`}>{opp.type}</span>
                 <button onClick={() => toggleBookmark(opp.id)} className="p-1 hover:bg-black/5 rounded-full cursor-pointer shrink-0">
                   {bookmarks[opp.id]
                     ? <BookmarkCheck size={15} className="text-amber-600" />
                     : <Bookmark size={15} className="text-gray-400" />}
                 </button>
               </div>
-              <h3 className="text-sm text-gray-900 mt-2 leading-snug">{opp.title}</h3>
-              <p className="text-2xs text-gray-500 mt-0.5">{opp.organizer}</p>
-              <p className="text-xs text-gray-600 mt-2 leading-relaxed">{opp.description}</p>
+              <h3 className="text-base text-gray-900 mt-2 leading-snug">{opp.title}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{opp.organizer}</p>
+              <p className="text-sm text-gray-600 mt-2 leading-relaxed">{opp.description}</p>
             </div>
 
             <div>
               {/* Relevance */}
-              <div className="flex items-center justify-between text-2xs text-gray-600 mb-1">
-                <span>PACER Relevance</span>
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <span>Curator Relevance</span>
                 <span className="text-emerald-700">{opp.relevanceScore}%</span>
               </div>
               <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mb-3">
@@ -100,14 +100,14 @@ export const OpportunitiesPage: React.FC = () => {
               {/* Tags */}
               <div className="flex flex-wrap gap-1 mb-3">
                 {opp.tags.map(tag => (
-                  <span key={tag} className="text-2xs px-2 py-0.5 bg-white/70 border border-gray-200 rounded-full text-gray-600">{tag}</span>
+                  <span key={tag} className="text-xs px-2 py-0.5 bg-white/70 border border-gray-200 rounded-full text-gray-600">{tag}</span>
                 ))}
               </div>
 
               <div className="flex items-center justify-between">
-                {opp.deadline && <span className="text-2xs text-orange-700">Deadline: {opp.deadline}</span>}
-                <button className="ml-auto flex items-center gap-1 text-2xs px-3 py-1.5 rounded-full bg-black text-white hover:bg-gray-800 cursor-pointer">
-                  <span>View</span><ExternalLink size={10} />
+                {opp.deadline && <span className="text-xs text-orange-700">Deadline: {opp.deadline}</span>}
+                <button className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-black text-white hover:bg-gray-800 cursor-pointer">
+                  <span>View</span><ExternalLink size={12} />
                 </button>
               </div>
             </div>

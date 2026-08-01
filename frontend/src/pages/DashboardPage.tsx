@@ -33,17 +33,17 @@ const ResourceCard: React.FC<{
   <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 hover:border-amber-400/50 transition-all group shadow-md">
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-          <span className="text-2xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full font-medium">{item.type}</span>
-          <span className="text-2xs text-zinc-400">{item.estTime}</span>
-          <span className={`text-2xs px-2 py-0.5 rounded-full ${DIFF_COLORS[item.difficulty]}`}>{item.difficulty}</span>
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          <span className="text-xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">{item.type}</span>
+          <span className="text-xs text-zinc-400">{item.estTime}</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${DIFF_COLORS[item.difficulty]}`}>{item.difficulty}</span>
         </div>
-        <h4 className="text-sm font-semibold text-white leading-snug">{item.title}</h4>
-        <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-          <Star size={10} className="fill-emerald-400 text-emerald-400" />
+        <h4 className="text-base text-white leading-snug">{item.title}</h4>
+        <p className="text-sm text-emerald-400 mt-1 flex items-center gap-1">
+          <Star size={12} className="fill-emerald-400 text-emerald-400" />
           Skill gain: {item.skillGain}
         </p>
-        <p className="text-xs text-zinc-300 mt-1">
+        <p className="text-sm text-zinc-300 mt-1">
           <strong className="text-white">Why:</strong> {item.reasoning}
         </p>
       </div>
@@ -60,21 +60,21 @@ const ResourceCard: React.FC<{
 
     <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-800/80 gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-emerald-400 flex items-center gap-1 text-2xs font-medium">
-          <ShieldCheck size={12} />{item.intentionalityScore}% Signal
+        <span className="text-emerald-400 flex items-center gap-1 text-xs">
+          <ShieldCheck size={13} />{item.intentionalityScore}% Signal
         </span>
         <button
           onClick={() => onExplain(item)}
-          className="flex items-center gap-1 text-2xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
+          className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
         >
-          <Info size={11} /> Why this?
+          <Info size={13} /> Why this?
         </button>
       </div>
       <button
         onClick={() => onLearn(item.title)}
-        className="flex items-center gap-1.5 text-2xs px-3 py-1.5 rounded-full bg-amber-400 text-amber-950 font-semibold hover:bg-amber-300 transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-400 text-amber-950 hover:bg-amber-300 transition-colors cursor-pointer"
       >
-        <PlayCircle size={12} /> Continue Learning
+        <PlayCircle size={13} /> Continue Learning
       </button>
     </div>
   </div>
@@ -130,12 +130,12 @@ export const DashboardPage: React.FC = () => {
     <div className="w-full max-w-7xl mx-auto space-y-8 pb-16">
 
       {/* ── Header ───────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pt-2">
+      <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-4 md:px-6 py-10">
         <div>
           <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight">
             Welcome back, <span className="text-amber-400">{profile.name}</span>
           </h1>
-          <p className="text-sm text-zinc-400 mt-1 flex items-center gap-2">
+          <p className="text-base text-zinc-400 mt-2 flex items-center gap-2">
             <Brain size={16} className="text-amber-400" />
             <span>Identity: <strong className="text-zinc-200">{profile.aspirationalIdentity}</strong></span>
           </p>
@@ -169,15 +169,15 @@ export const DashboardPage: React.FC = () => {
         <Card dark className="flex flex-col gap-3 border-zinc-800">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-2xs uppercase tracking-wider text-zinc-400 font-semibold">Today's Mission</span>
-              <span className="text-2xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/30">
+              <span className="text-xs uppercase tracking-wider text-zinc-400">Today's Mission</span>
+              <span className="text-xs bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/30">
                 {todayMission.taskType}
               </span>
             </div>
-            <h3 className="text-sm font-semibold text-white mt-2 leading-snug">{todayMission.taskTitle}</h3>
+            <h3 className="text-base text-white mt-2 leading-snug">{todayMission.taskTitle}</h3>
           </div>
           <div className="space-y-1.5">
-            <div className="flex justify-between text-2xs text-zinc-400">
+            <div className="flex justify-between text-xs text-zinc-400">
               <span>Progress</span><span className="text-amber-400 font-mono">{todayMission.progressPercent}%</span>
             </div>
             <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
@@ -185,13 +185,13 @@ export const DashboardPage: React.FC = () => {
                 style={{ width: `${todayMission.progressPercent}%` }} />
             </div>
           </div>
-          <div className="text-2xs text-zinc-400 space-y-1">
-            <div className="flex items-center gap-1.5"><Clock size={12} className="text-zinc-400" /><span>Est. {todayMission.estimatedMinutes} min</span></div>
-            <div className="flex items-center gap-1.5"><Target size={12} className="text-amber-400" /><span className="text-amber-300">{todayMission.reward}</span></div>
+          <div className="text-xs text-zinc-400 space-y-1.5">
+            <div className="flex items-center gap-1.5"><Clock size={13} className="text-zinc-400" /><span>Est. {todayMission.estimatedMinutes} min</span></div>
+            <div className="flex items-center gap-1.5"><Target size={13} className="text-amber-400" /><span className="text-amber-300">{todayMission.reward}</span></div>
           </div>
           <Link
             to={todayMission.route}
-            className="mt-auto w-full py-2.5 rounded-full bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center gap-2 hover:bg-amber-300 transition-colors"
+            className="mt-auto w-full py-2.5 rounded-full bg-amber-400 text-amber-950 text-sm flex items-center justify-center gap-2 hover:bg-amber-300 transition-colors"
           >
             <PlayCircle size={14} /> Continue Learning
           </Link>
@@ -204,52 +204,52 @@ export const DashboardPage: React.FC = () => {
               <Sparkles size={16} className="text-amber-400" />
             </div>
             <div>
-              <h3 className="text-xs font-semibold text-white">AI Coach Recommendation</h3>
+              <h3 className="text-sm text-white">AI Coach Recommendation</h3>
               <div className="flex items-center gap-1 mt-0.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${aiCoach.energyLevel === "High" ? "bg-emerald-400" : aiCoach.energyLevel === "Medium" ? "bg-amber-400" : "bg-rose-400"}`} />
-                <span className="text-2xs text-zinc-400">{aiCoach.energyLevel} Energy Day</span>
+                <span className="text-xs text-zinc-400">{aiCoach.energyLevel} Energy Day</span>
               </div>
             </div>
           </div>
-          <p className="text-xs text-zinc-300 leading-relaxed">{aiCoach.message}</p>
-          <div className="p-3 bg-zinc-950/80 rounded-2xl border border-amber-500/30 text-xs text-amber-200">
+          <p className="text-sm text-zinc-300 leading-relaxed">{aiCoach.message}</p>
+          <div className="p-3 bg-zinc-950/80 rounded-2xl border border-amber-500/30">
             <div className="flex items-center gap-1.5 mb-1">
-              <Target size={12} className="text-amber-400" />
-              <span className="text-white font-medium">Focus today:</span>
+              <Target size={13} className="text-amber-400" />
+              <span className="text-sm text-white">Focus today:</span>
             </div>
-            <p className="text-amber-300 text-2xs">{aiCoach.focusTopic}</p>
+            <p className="text-sm text-amber-300">{aiCoach.focusTopic}</p>
           </div>
-          <p className="text-2xs text-zinc-400 italic flex items-center gap-1">
-            <Lightbulb size={12} className="text-amber-400 shrink-0" /> {aiCoach.tip}
+          <p className="text-xs text-zinc-400 italic flex items-center gap-1.5">
+            <Lightbulb size={13} className="text-amber-400 shrink-0" /> {aiCoach.tip}
           </p>
         </Card>
 
         {/* Learning Consistency */}
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">Learning Consistency</h3>
+            <h3 className="text-xs text-zinc-400 uppercase tracking-wider">Growth Consistency</h3>
             <Trophy size={16} className="text-amber-400" />
           </div>
 
           <div className="flex items-center gap-4">
             <div className="text-center">
-              <div className="text-3xl font-bold text-white flex items-center gap-1">
+              <div className="text-3xl text-white flex items-center gap-1">
                 <Flame size={22} className="text-orange-500" />
                 {learningConsistency.currentStreak}
               </div>
-              <div className="text-2xs text-zinc-400 mt-0.5">Day Streak</div>
-              <div className="text-2xs text-zinc-500">Best: {learningConsistency.bestStreak}d</div>
+              <div className="text-xs text-zinc-400 mt-0.5">Day Streak</div>
+              <div className="text-xs text-zinc-500">Best: {learningConsistency.bestStreak}d</div>
             </div>
             <div className="flex-1 space-y-2">
               <div>
-                <div className="flex justify-between text-2xs text-zinc-400 mb-1">
-                  <span>Weekly Consistency</span><span className="text-emerald-400 font-semibold">{learningConsistency.weeklyConsistencyPercent}%</span>
+                <div className="flex justify-between text-xs text-zinc-400 mb-1">
+                  <span>Weekly Consistency</span><span className="text-emerald-400">{learningConsistency.weeklyConsistencyPercent}%</span>
                 </div>
                 <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${learningConsistency.weeklyConsistencyPercent}%` }} />
                 </div>
               </div>
-              <div className="text-xs text-zinc-300">{learningConsistency.weeklyHours}h study this week</div>
+              <div className="text-sm text-zinc-300">{learningConsistency.weeklyHours}h focus this week</div>
             </div>
           </div>
 

@@ -84,15 +84,15 @@ export const InsightsPage: React.FC = () => {
           </h3>
           <div className="space-y-3">
             {weeklyInsights.strengths.map((s, i) => (
-              <div key={i} className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+              <div key={i} className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-emerald-900">{s.topic}</span>
-                  <span className="text-xs text-emerald-700">{s.score}%</span>
+                  <span className="text-sm text-emerald-900">{s.topic}</span>
+                  <span className="text-sm text-emerald-700">{s.score}%</span>
                 </div>
                 <div className="w-full bg-emerald-200 h-1.5 rounded-full overflow-hidden mb-1.5">
                   <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${s.score}%` }} />
                 </div>
-                <p className="text-2xs text-emerald-700">{s.note}</p>
+                <p className="text-xs text-emerald-700">{s.note}</p>
               </div>
             ))}
           </div>
@@ -106,15 +106,15 @@ export const InsightsPage: React.FC = () => {
           </h3>
           <div className="space-y-3">
             {weeklyInsights.weaknesses.map((w, i) => (
-              <div key={i} className="p-3 rounded-2xl bg-orange-50 border border-orange-200">
+              <div key={i} className="p-3.5 rounded-2xl bg-orange-50 border border-orange-200">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-orange-900">{w.topic}</span>
-                  <span className="text-xs text-orange-700">{w.score}%</span>
+                  <span className="text-sm text-orange-900">{w.topic}</span>
+                  <span className="text-sm text-orange-700">{w.score}%</span>
                 </div>
                 <div className="w-full bg-orange-200 h-1.5 rounded-full overflow-hidden mb-1.5">
                   <div className="bg-orange-500 h-full rounded-full" style={{ width: `${w.score}%` }} />
                 </div>
-                <p className="text-2xs text-orange-700">{w.suggestion}</p>
+                <p className="text-xs text-orange-700">{w.suggestion}</p>
               </div>
             ))}
           </div>
@@ -129,13 +129,13 @@ export const InsightsPage: React.FC = () => {
           {weeklyInsights.suggestedPractice.map((practice, i) => (
             <div key={i} className="p-3.5 rounded-2xl bg-white/60 border border-black/5 hover:border-amber-300/60 transition-all flex items-start justify-between gap-3">
               <div>
-                <span className="text-2xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">{practice.type}</span>
-                <h4 className="text-sm text-gray-900 mt-1">{practice.title}</h4>
-                <p className="text-xs text-gray-600 mt-0.5">{practice.reason}</p>
+                <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">{practice.type}</span>
+                <h4 className="text-base text-gray-900 mt-1.5">{practice.title}</h4>
+                <p className="text-sm text-gray-600 mt-0.5">{practice.reason}</p>
               </div>
               <Link to={practice.route}
-                className="flex items-center gap-1.5 text-2xs px-3 py-1.5 rounded-full bg-black text-white hover:bg-gray-800 transition-colors shrink-0">
-                <PlayCircle size={11} />Start
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors shrink-0">
+                <PlayCircle size={13} />Start
               </Link>
             </div>
           ))}
@@ -157,7 +157,7 @@ export const InsightsPage: React.FC = () => {
         <div className="space-y-3">
           {metrics.skillMatrix.map(skill => (
             <div key={skill.skill}>
-              <div className="flex justify-between text-xs text-gray-700 mb-1">
+              <div className="flex justify-between text-sm text-gray-700 mb-1">
                 <span>{skill.skill}</span>
                 <span className="text-gray-500">{skill.score}% / {skill.target}% target</span>
               </div>
@@ -168,7 +168,7 @@ export const InsightsPage: React.FC = () => {
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 text-2xs text-gray-500">
+        <div className="flex items-center gap-4 text-xs text-gray-500">
           <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-black" /><span>Current Score</span></div>
           <div className="flex items-center gap-1.5"><div className="w-0.5 h-3 bg-amber-500" /><span>Target Goal</span></div>
         </div>

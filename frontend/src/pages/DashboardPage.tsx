@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../api/axiosClient";
 import {
   Flame, Trophy, Clock, Target, Sparkles, TrendingUp,
   ArrowRight, CheckCircle2, Circle, Zap,
   ChevronRight, Play, BarChart2, BookMarked, Video,
-  Headphones, CheckSquare
+  Headphones, CheckSquare, LogOut
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { TopicBubbleChart } from "../components/charts/TopicBubbleChart";
 import { useAuth } from "../contexts/auth.context";
-import { apiService } from "../api";
+import { apiService, curationApi } from "../api";
 import type { DashboardDataResponse } from "../api";
 import { DUMMY_GROWTH_AREAS, type DummyGrowthAreaTopic } from "../data/dummyGrowthAreas";
 
@@ -106,8 +106,37 @@ const TaskRow: React.FC<{
 
 /* ─── Dashboard Main Component ───────────────────────────────── */
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/signin");
+  };
+
+  // Helper to store checked tasks locally by date + title
+  const getLocalCheckedTasks = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const stored = localStorage.getItem(`tasks_${today}`);
+    return stored ? JSON.parse(stored) : [];
+  };
+  
+  const saveLocalCheckedTask = (title: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const checked = getLocalCheckedTasks();
+    if (!checked.includes(title)) {
+      checked.push(title);
+      localStorage.setItem(`tasks_${today}`, JSON.stringify(checked));
+    }
+  };
+  
+  const removeLocalCheckedTask = (title: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const checked = getLocalCheckedTasks();
+    const updated = checked.filter((t: string) => t !== title);
+    localStorage.setItem(`tasks_${today}`, JSON.stringify(updated));
+  };
   const [isYoutubeSynced, setIsYoutubeSynced] = useState(() => {
     return localStorage.getItem("youtube_synced") === "true";
   });
@@ -198,13 +227,15 @@ export const DashboardPage: React.FC = () => {
 
         // Setup dynamic tasks based on dashboardData
         if (res?.daily_tasks && Array.isArray(res.daily_tasks)) {
-          setTasks(res.daily_tasks.map((t: any) => ({
+          const checkedTitles = getLocalCheckedTasks();
+          const formattedTasks = res.daily_tasks.map((t: any) => ({
             id: t.id,
             title: t.title,
-            tag: t.tag || "Task",
-            time: `${t.estimated_minutes || 15} min`,
-            done: t.done || false
-          })));
+            done: checkedTitles.includes(t.title),
+            tag: t.tag || "Focus",
+            time: t.estimated_minutes ? `${t.estimated_minutes} min` : "15 min"
+          }));
+          setTasks(formattedTasks);
         } else if (res?.todayMission) {
           setTasks([
             {
@@ -221,15 +252,28 @@ export const DashboardPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const toggleTask = async (id: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-    try {
-      await axiosInstance.post(`/daily-tasks/${id}/complete`);
-    } catch (error) {
-      console.error("Failed to toggle task", error);
-      // Revert if needed
-      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-    }
+  const toggleTask = (id: string) => {
+    setTasks(tasks.map(t => {
+      if (t.id === id) {
+        const newDone = !t.done;
+        if (newDone) {
+          saveLocalCheckedTask(t.title);
+          if (t.tag) {
+            curationApi.markContentComplete({
+              url: `dashboard-task-${Date.now()}`,
+              title: t.title,
+              content_type: "action",
+              platform: "dashboard",
+              skill_name: t.tag
+            }).catch(console.error);
+          }
+        } else {
+          removeLocalCheckedTask(t.title);
+        }
+        return { ...t, done: newDone };
+      }
+      return t;
+    }));
   };
 
   const completedCount = tasks.filter((t) => t.done).length;
@@ -323,6 +367,14 @@ export const DashboardPage: React.FC = () => {
             <Play size={18} className="fill-white" />
             Resume Learning
           </Link>
+          <button
+            onClick={handleLogout}
+            className="h-fit flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold text-rose-300 bg-rose-950/40 border border-rose-500/30 hover:bg-rose-900/60 transition-all cursor-pointer shadow-md"
+            title="Log out of your account"
+          >
+            <LogOut size={16} />
+            Log Out
+          </button>
         </div>
       </div>
 
@@ -473,12 +525,6 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <Link
-              to="/curation"
-              className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-purple-600 text-zinc-200 hover:text-white text-sm text-center transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              Explore Full Roadmap Stage <ArrowRight size={14} />
-            </Link>
           </div>
         </div>
       </div>

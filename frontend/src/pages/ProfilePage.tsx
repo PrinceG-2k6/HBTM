@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   User, Edit3, Save, Plus, Trash2, Sparkles, TrendingUp,
-  Award, Calendar, X
+  Award, Calendar, X, ArrowLeft
 } from "lucide-react";
 import { Card } from "../components/ui/Card";
 import { SkeletonCard } from "../components/ui/Skeleton";
@@ -90,6 +91,14 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-16">
+      {/* Back Button */}
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800 border border-white/5 text-xs font-semibold text-zinc-300 hover:text-purple-300 transition-all cursor-pointer shadow-md"
+      >
+        <ArrowLeft size={15} /> Back to Dashboard
+      </Link>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl text-white">Your <span className="text-purple-400">Profile</span></h1>

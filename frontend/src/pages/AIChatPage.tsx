@@ -31,7 +31,6 @@ export const AIChatPage: React.FC = () => {
       sender: "ai",
       text: `Hello ${user?.name ? user.name.split(" ")[0] : "Growth Aspirant"}! 👋 I am your **PACER AI Curator**.\n\nI continuously monitor your growth areas, media preferences, and daily commitment to help you transform into the self you imagine.\n\nHow can I help you accelerate your journey today? Feel free to ask a question or **upload an image** of your notes, schedule, or code to analyze!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      suggestedActions: ["View Growth Roadmap", "Explore Learning Lab"],
     },
   ]);
 
@@ -107,15 +106,8 @@ export const AIChatPage: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    } catch {
-      const fallbackReply: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: "ai",
-        text: `I've received your query! Based on your identity gap goals:\n\n1. **Focus Alignment**: Prioritize active application over passive scrolling.\n2. **Habit Stack**: Block 25 minutes for high-priority learning.\n3. **Curated Next Step**: Visit your Growth Roadmap to log today's progress.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        suggestedActions: ["View Growth Roadmap"],
-      };
-      setMessages((prev) => [...prev, fallbackReply]);
+    } catch (err: any) {
+      alert(`Backend Connection Error: Please ensure your backend is running. Detailed error: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -234,26 +226,7 @@ export const AIChatPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* AI Suggested Action Pills */}
-                  {msg.suggestedActions && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {msg.suggestedActions.map((act, idx) => (
-                        <Link
-                          key={idx}
-                          to={
-                            act.includes("Roadmap")
-                              ? "/roadmap"
-                              : act.includes("Lab")
-                              ? "/learning-lab"
-                              : "/insights"
-                          }
-                          className="text-[11px] font-semibold px-3 py-1 rounded-full bg-purple-950/40 text-purple-300 hover:bg-purple-600 hover:text-white transition-all duration-200 flex items-center gap-1 cursor-pointer"
-                        >
-                          {act} <ArrowRight size={11} />
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+
                 </div>
 
                 {isUser && (

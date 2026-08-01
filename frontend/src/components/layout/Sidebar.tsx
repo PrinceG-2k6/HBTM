@@ -23,7 +23,11 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
+  const handleLogout = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setMobileMenuOpen(false);
     logout();
     navigate("/signin");
@@ -118,33 +122,35 @@ export const Sidebar: React.FC = () => {
           </Link>
 
           {/* User Card */}
-          <Link to="/profile" className="flex items-center gap-3 p-1 rounded-2xl bg-zinc-900/60 overflow-hidden hover:bg-zinc-800 transition-colors">
-            <div
-              className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-white"
-              style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}
-            >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="avatar" className="w-full h-full rounded-xl object-cover" />
-              ) : (
-                initials
-              )}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-200 font-semibold truncate capitalize">{user?.name || "Growth Aspirant"}</p>
-                <p className="text-sm text-gray-300 truncate font-mono">{user?.email || "user@pacer.ai"}</p>
+          <div className="flex items-center justify-between p-1.5 rounded-2xl bg-zinc-900/60 overflow-hidden hover:bg-zinc-800 transition-colors">
+            <Link to="/profile" className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div
+                className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-xs"
+                style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899)" }}
+              >
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="avatar" className="w-full h-full rounded-xl object-cover" />
+                ) : (
+                  initials
+                )}
               </div>
-            )}
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-200 text-xs font-semibold truncate capitalize">{user?.name || "Growth Aspirant"}</p>
+                  <p className="text-[11px] text-gray-400 truncate">{user?.email || "user@pacer.ai"}</p>
+                </div>
+              )}
+            </Link>
             {!collapsed && (
               <button
                 onClick={handleLogout}
-                className="p-2.5 rounded-md text-gray-400 hover:text-white hover:bg-[#ec1e9d30] transition-colors cursor-pointer shrink-0"
+                className="p-2 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
                 title="Log out"
               >
-                <LogOut size={15} />
+                <LogOut size={16} />
               </button>
             )}
-          </Link>
+          </div>
         </div>
       </aside>
 

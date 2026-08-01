@@ -88,9 +88,7 @@ async def add_skill(req: AddSkillRequest, current_user: User = Depends(get_curre
     if existing:
         raise HTTPException(status_code=400, detail="Skill already exists")
     
-    import uuid
     new_skill = UserSkill(
-        id=str(uuid.uuid4()),
         user_id=current_user.id,
         skill_name=req.skill_name,
         current_level=0.0,
@@ -101,6 +99,7 @@ async def add_skill(req: AddSkillRequest, current_user: User = Depends(get_curre
     )
     db.add(new_skill)
     await db.commit()
+    await db.refresh(new_skill)
     
     return {
         "status": "success",

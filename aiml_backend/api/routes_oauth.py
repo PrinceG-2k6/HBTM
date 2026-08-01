@@ -105,13 +105,8 @@ async def youtube_callback(
             content_urls.append(f"https://www.youtube.com/watch?v={video_id}")
             
     # If no URLs found (or history is empty due to API limitations)
-    if not content_urls:
-        return {
-            "status": "success",
-            "message": "Authentication successful, but no watch history was returned (See YouTube API v3 limitations on the HL playlist).",
-            "synced_videos": 0
-        }
-        
+    # Proceed to trigger bulk skill update (which will do nothing if empty)
+    # and hit the RedirectResponse at the bottom of the function.
     # Trigger bulk skill update using the fetched URLs
     # Limit to top 5 for performance during sync
     urls_to_sync = content_urls[:5]

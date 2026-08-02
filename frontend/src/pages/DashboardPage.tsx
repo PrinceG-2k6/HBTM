@@ -5,7 +5,7 @@ import {
   Flame, Trophy, Clock, Target, Sparkles, TrendingUp,
   ArrowRight, CheckCircle2, Circle, Zap,
   ChevronRight, Play, BarChart2, BookMarked, Video,
-  Headphones, CheckSquare, LogOut
+  Headphones, CheckSquare, LogOut, ShoppingBag, MessageCircle
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
@@ -19,10 +19,7 @@ import { DUMMY_GROWTH_AREAS, type DummyGrowthAreaTopic } from "../data/dummyGrow
 
 /* ─── Greeting Helper ────────────────────────────────────────── */
 const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  return "Hello";
 };
 
 /* ─── Borderless Stat Card Component ─────────────────────────── */
@@ -283,12 +280,61 @@ export const DashboardPage: React.FC = () => {
   // Handle Bubble Chart Hover
   const handleTopicHover = (topicName: string | null) => {
     if (!topicName) return;
-    const found = dynamicGrowthAreas.find(
-      (g) => g.name.toLowerCase() === topicName.toLowerCase()
-    );
-    if (found) {
-      setActiveGrowthArea(found);
+    const match = dynamicGrowthAreas.find(g => g.name.toLowerCase() === topicName.toLowerCase());
+    if (match && match.id !== activeGrowthArea.id) {
+      setActiveGrowthArea(match);
     }
+  };
+
+  // Real-time progress boost mutator
+  const handleBoostProgress = (amountPercent: number, addedHours: number) => {
+    if (!activeGrowthArea) return;
+    const newPct = Math.min(100, activeGrowthArea.completedPercent + amountPercent);
+    const newHours = Math.round((activeGrowthArea.timeInvested + addedHours) * 10) / 10;
+
+    let newState = activeGrowthArea.nodeState;
+    if (newPct >= 85) newState = "Mastering";
+    else if (newPct >= 60) newState = "Applying";
+    else if (newPct >= 30) newState = "Practicing";
+    else newState = "Learning";
+
+    const updatedArea: DummyGrowthAreaTopic = {
+      ...activeGrowthArea,
+      completedPercent: newPct,
+      timeInvested: newHours,
+      confidenceLevel: Math.min(100, activeGrowthArea.confidenceLevel + Math.round(amountPercent * 0.6)),
+      nodeState: newState,
+      completedItems: Math.min(activeGrowthArea.totalItems, activeGrowthArea.completedItems + 1),
+      recentlyActive: true,
+    };
+
+    setActiveGrowthArea(updatedArea);
+    setDynamicGrowthAreas(prev => prev.map(area => area.id === updatedArea.id ? updatedArea : area));
+  };
+
+  // Real-time resource task toggle
+  const handleToggleResource = (recIdx: number) => {
+    if (!activeGrowthArea) return;
+    const updatedRecs = [...activeGrowthArea.recommendations];
+    const target = updatedRecs[recIdx] as any;
+    const isCompleted = target.completed;
+    target.completed = !isCompleted;
+
+    const boost = !isCompleted ? 8 : -8;
+    const newPct = Math.min(100, Math.max(0, activeGrowthArea.completedPercent + boost));
+
+    const updatedArea: DummyGrowthAreaTopic = {
+      ...activeGrowthArea,
+      completedPercent: newPct,
+      completedItems: !isCompleted
+        ? Math.min(activeGrowthArea.totalItems, activeGrowthArea.completedItems + 1)
+        : Math.max(0, activeGrowthArea.completedItems - 1),
+      recommendations: updatedRecs,
+      recentlyActive: true,
+    };
+
+    setActiveGrowthArea(updatedArea);
+    setDynamicGrowthAreas(prev => prev.map(area => area.id === updatedArea.id ? updatedArea : area));
   };
 
   // Weekly focus log chart data from real database activity
@@ -435,95 +481,187 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Active Area Pill Badge */}
-          <div className="flex items-center gap-3 bg-[#8c1fd439] px-4 py-2 rounded-2xl self-start md:self-auto">
+          <div className="flex items-center gap-3 bg-purple-950/40 border border-purple-800/40 px-4 py-2 rounded-2xl self-start md:self-auto">
             <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_10px_#a855f7]" />
-            <span className="text-purple-200">
-              Active: {activeGrowthArea.name} (+{activeGrowthArea.growthRate}% Growth)
+            <span className="text-purple-200 text-sm font-medium">
+              Inspecting Node: <strong className="text-white">{activeGrowthArea.name}</strong> (+{activeGrowthArea.growthRate}% Growth)
             </span>
           </div>
         </div>
 
-        {/* 2-Column Grid: Bubble Chart + Interactive Recommendations Panel */}
+        {/* 2-Column Grid: Bubble Chart + Real-Time Interactive Recommendations Panel */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left: Physics Bubble Canvas (Col 7) */}
-          <div className="lg:col-span-7 rounded-2xl bg-black/40 p-4 min-h-100">
+          <div className="lg:col-span-7 rounded-3xl bg-zinc-950/80 border border-zinc-800/80 p-4 min-h-100 shadow-2xl">
             <TopicBubbleChart
               topics={dynamicGrowthAreas}
+              selectedTopicId={activeGrowthArea.id}
               onTopicHover={handleTopicHover}
+              onTopicSelect={(topic) => {
+                const match = dynamicGrowthAreas.find(g => g.id === topic.id || g.name === topic.name);
+                if (match) setActiveGrowthArea(match);
+              }}
             />
           </div>
 
-          {/* Right: Rich Interactive Recommendations Panel (Col 5) */}
-          <div className="lg:col-span-5 rounded-2xl bg-zinc-900/60 p-6 space-y-5 flex flex-col justify-between h-full min-h-100">
-            <div className="space-y-4">
+          {/* Right: Real-Time Interactive Panel (Col 5) */}
+          <div className="lg:col-span-5 rounded-3xl bg-zinc-950/90 border border-zinc-800/90 p-6 space-y-6 flex flex-col justify-between h-full min-h-100 shadow-2xl backdrop-blur-2xl">
+            <div className="space-y-5">
               {/* Selected Topic Info Header */}
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between border-b border-zinc-800/80 pb-4">
                 <div>
-                  <span className="text-xs tracking-widest uppercase px-3 py-1 rounded-full bg-purple-500/20 text-purple-200">
+                  <span className="text-[10px] tracking-widest uppercase px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/30">
                     {activeGrowthArea.category}
                   </span>
-                  <h3 className="text-xl text-white ml-1.25 mt-2">
+                  <h3 className="text-2xl font-bold text-white mt-2">
                     {activeGrowthArea.name}
                   </h3>
                 </div>
                 <div className="text-right">
-                  <span className="text-xl text-emerald-400">
+                  <span className="text-2xl font-bold text-emerald-400 font-mono">
                     +{activeGrowthArea.growthRate}%
                   </span>
-                  <p className="text-xs text-zinc-400">Growth Rate</p>
+                  <p className="text-xs text-zinc-400 font-medium">Growth Rate</p>
                 </div>
               </div>
 
-              {/* Progress & Stats Bar */}
-              <div className="space-y-1.5 pt-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-300">Topic Mastery</span>
-                  <span className="text-purple-300">{activeGrowthArea.completedPercent}%</span>
+              {/* Real-Time Progress & Metrics Bar */}
+              <div className="space-y-2 pt-1 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800/60">
+                <div className="flex justify-between items-center text-sm font-semibold">
+                  <span className="text-zinc-200">Topic Mastery</span>
+                  <span className="text-purple-400 font-mono text-base">{activeGrowthArea.completedPercent}%</span>
                 </div>
-                <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-zinc-950 rounded-full h-3 overflow-hidden p-0.5 border border-zinc-800">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
+                    className="h-full rounded-full transition-all duration-700 ease-out"
                     style={{
                       width: `${activeGrowthArea.completedPercent}%`,
-                      background: "linear-gradient(90deg, #8b5cf6, #ec4899)",
+                      background: "linear-gradient(90deg, #8b5cf6, #ec4899, #10b981)",
                     }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-zinc-300 pt-1">
-                  <span>Time: {activeGrowthArea.timeInvested}h</span>
-                  <span>Confidence: {activeGrowthArea.confidenceLevel}%</span>
-                  <span>State: {activeGrowthArea.nodeState}</span>
+                <div className="grid grid-cols-3 gap-2 text-xs text-zinc-300 pt-2 text-center border-t border-zinc-800/50">
+                  <div>
+                    <span className="text-zinc-400 block text-[10px] uppercase">Time</span>
+                    <span className="font-bold text-white">{activeGrowthArea.timeInvested}h</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400 block text-[10px] uppercase">Confidence</span>
+                    <span className="font-bold text-amber-400">{activeGrowthArea.confidenceLevel}%</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400 block text-[10px] uppercase">Node State</span>
+                    <span className="font-bold text-emerald-400">{activeGrowthArea.nodeState}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Curated Recommendations List */}
-              <div className="space-y-3 pt-3">
-                <p className="text-xs font-semibold text-zinc-200 tracking-wider uppercase flex items-center gap-1.5">
-                  <Zap size={14} className="text-purple-400" /> Curated Growth Resources
+              {/* Real-Time Interactive Action Boosters */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-zinc-400 tracking-wider uppercase">
+                  ⚡ Real-Time Progress Actions
                 </p>
-
-                {activeGrowthArea.recommendations.map((rec, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3.5 rounded-2xl bg-zinc-950/60 hover:bg-purple-950/30 transition-all duration-200 group cursor-pointer"
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => handleBoostProgress(5, 0.5)}
+                    className="px-2.5 py-2 rounded-xl bg-zinc-900 hover:bg-purple-900/40 border border-zinc-800 hover:border-purple-500/50 text-xs font-medium text-purple-200 transition-all flex flex-col items-center gap-0.5 cursor-pointer hover:scale-[1.02]"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {rec.type === "Book" && <BookMarked size={14} className="text-amber-400" />}
-                        {rec.type === "Video" && <Video size={14} className="text-rose-400" />}
-                        {rec.type === "Podcast" && <Headphones size={14} className="text-sky-400" />}
-                        {rec.type === "Action" && <CheckSquare size={14} className="text-emerald-400" />}
-                        <span className="text-sm text-zinc-100 group-hover:text-purple-300">
-                          {rec.title}
-                        </span>
+                    <span className="font-bold text-amber-400">+5%</span>
+                    <span className="text-[10px] text-zinc-400">Quick Practice</span>
+                  </button>
+                  <button
+                    onClick={() => handleBoostProgress(15, 1.5)}
+                    className="px-2.5 py-2 rounded-xl bg-zinc-900 hover:bg-emerald-900/40 border border-zinc-800 hover:border-emerald-500/50 text-xs font-medium text-emerald-200 transition-all flex flex-col items-center gap-0.5 cursor-pointer hover:scale-[1.02]"
+                  >
+                    <span className="font-bold text-emerald-400">+15%</span>
+                    <span className="text-[10px] text-zinc-400">Deep Focus</span>
+                  </button>
+                  <button
+                    onClick={() => handleBoostProgress(25, 2.5)}
+                    className="px-2.5 py-2 rounded-xl bg-zinc-900 hover:bg-blue-900/40 border border-zinc-800 hover:border-blue-500/50 text-xs font-medium text-blue-200 transition-all flex flex-col items-center gap-0.5 cursor-pointer hover:scale-[1.02]"
+                  >
+                    <span className="font-bold text-blue-400">+25%</span>
+                    <span className="text-[10px] text-zinc-400">Mastery Boost</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Curated Recommendations List with Interactive Checkmarks */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-zinc-300 tracking-wider uppercase flex items-center gap-1.5">
+                    <Zap size={14} className="text-purple-400" /> Curated Growth Resources
+                  </p>
+                  <span className="text-[11px] text-zinc-500 font-mono">
+                    {activeGrowthArea.completedItems}/{activeGrowthArea.totalItems} Items
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {activeGrowthArea.recommendations.map((rec, idx) => {
+                    const isCompleted = (rec as any).completed;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => handleToggleResource(idx)}
+                        className={`p-3.5 rounded-2xl border transition-all duration-200 group cursor-pointer ${
+                          isCompleted
+                            ? "bg-emerald-950/30 border-emerald-800/40"
+                            : "bg-zinc-900/60 border-zinc-800/80 hover:bg-purple-950/30 hover:border-purple-500/40"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <button className="shrink-0 transition-transform group-hover:scale-110">
+                              {isCompleted ? (
+                                <CheckCircle2 size={16} className="text-emerald-400" />
+                              ) : (
+                                <Circle size={16} className="text-zinc-500 group-hover:text-purple-400" />
+                              )}
+                            </button>
+                            <div className="flex items-center gap-2">
+                              {rec.type === "Book" && <BookMarked size={14} className="text-amber-400" />}
+                              {rec.type === "Video" && <Video size={14} className="text-rose-400" />}
+                              {rec.type === "Podcast" && <Headphones size={14} className="text-sky-400" />}
+                              {rec.type === "Action" && <CheckSquare size={14} className="text-emerald-400" />}
+                              <span className={`text-sm font-medium ${isCompleted ? "line-through text-zinc-400" : "text-zinc-100 group-hover:text-purple-200"}`}>
+                                {rec.title}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-xs text-zinc-400 shrink-0 font-mono">{rec.duration}</span>
+                        </div>
+                        <p className="text-xs text-zinc-400 mt-1.5 pl-6 leading-relaxed">
+                          {rec.description}
+                        </p>
                       </div>
-                      <span className="text-xs text-zinc-400 shrink-0">{rec.duration}</span>
-                    </div>
-                    <p className="text-sm text-zinc-300 mt-1 pl-5 leading-relaxed">
-                      {rec.description}
-                    </p>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Actions Footer: View Related Products & AI Chat with Node Context */}
+              <div className="pt-3 border-t border-zinc-800/80 space-y-2">
+                <button
+                  onClick={() => navigate(`/shop?search=${encodeURIComponent(activeGrowthArea.name)}`)}
+                  className="w-full py-3 rounded-2xl bg-amber-400 text-amber-950 font-bold text-xs sm:text-sm hover:bg-amber-300 transition-all duration-300 shadow-xl shadow-amber-400/20 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
+                >
+                  <ShoppingBag size={16} />
+                  <span>View Related Products</span>
+                  <ArrowRight size={14} />
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/ai-chat?topic=${encodeURIComponent(activeGrowthArea.name)}&state=${encodeURIComponent(activeGrowthArea.nodeState)}&mastery=${activeGrowthArea.completedPercent}&time=${activeGrowthArea.timeInvested}`
+                    )
+                  }
+                  className="w-full py-2.5 rounded-2xl bg-zinc-900 border border-purple-500/40 hover:bg-purple-950/40 text-purple-200 font-semibold text-xs transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
+                >
+                  <MessageCircle size={15} className="text-purple-400" />
+                  <span>Talk with AI Coach on "{activeGrowthArea.name}"</span>
+                </button>
               </div>
             </div>
 

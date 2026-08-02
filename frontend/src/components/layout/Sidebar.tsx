@@ -3,7 +3,7 @@ import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Map, LineChart, FlaskConical, User2,
   Briefcase, Trophy, LogOut, ChevronLeft, ChevronRight,
-  Sparkles, Settings, Bot, Menu, X, MoreHorizontal, MessageCircle
+  Sparkles, Settings, Bot, Menu, X, MoreHorizontal, MessageCircle, ShoppingBag
 } from "lucide-react";
 import { useAuth } from "../../contexts/auth.context";
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", shortLabel: "Home", path: "/dashboard" },
   { icon: FlaskConical, label: "Curation Feed", shortLabel: "Curation", path: "/curation" },
   { icon: LineChart, label: "Skill Sandbox", shortLabel: "Sandbox", path: "/sandbox" },
+  { icon: ShoppingBag, label: "Products", shortLabel: "Products", path: "/shop" },
   { icon: User2, label: "Peer Reviews", shortLabel: "Reviews", path: "/reviews" },
   { icon: MessageCircle, label: "AI Coach", shortLabel: "AI Coach", path: "/ai-chat" },
 ];
@@ -62,10 +63,10 @@ export const Sidebar: React.FC = () => {
             {!collapsed && (
               <div>
                 <span className="font-extrabold text-white text-base tracking-wider block leading-none">
-                  PACER<span className="text-purple-400"> AI</span>
+                  UVOM<span className="text-purple-400"> AI</span>
                 </span>
                 <span className="text-[10px] text-zinc-400 tracking-widest uppercase mt-0.5 block">
-                  Growth Curator
+                  Upgraded Version of Me
                 </span>
               </div>
             )}
@@ -163,7 +164,7 @@ export const Sidebar: React.FC = () => {
             className="w-7 h-7 rounded-2xl shrink-0"
           />
           <span className="text-white tracking-wider">
-            PACER<span className="text-purple-400"> AI</span>
+            UVOM<span className="text-purple-400"> AI</span>
           </span>
         </div>
 
@@ -226,9 +227,9 @@ export const Sidebar: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-extrabold text-white text-lg tracking-wider block leading-none">
-                    PACER<span className="text-purple-400"> AI</span>
+                    UVOM<span className="text-purple-400"> AI</span>
                   </span>
-                  <span className="text-xs text-zinc-400">Growth Curator</span>
+                  <span className="text-xs text-zinc-400">Upgraded Version of Me</span>
                 </div>
               </div>
 

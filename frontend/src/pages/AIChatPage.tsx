@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Sparkles, Send, Image as ImageIcon, X, Bot, User,
   Copy, Check, ArrowRight, Zap, RefreshCw, Trash2
@@ -25,14 +25,38 @@ const QUICK_PROMPTS = [
 
 export const AIChatPage: React.FC = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  const topicParam = searchParams.get("topic");
+  const stateParam = searchParams.get("state") || "Active";
+  const masteryParam = searchParams.get("mastery") || "0";
+  const timeParam = searchParams.get("time") || "0";
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: "welcome-1",
       sender: "ai",
-      text: `Hello ${user?.name ? user.name.split(" ")[0] : "Growth Aspirant"}! 👋 I am your **PACER AI Curator**.\n\nI continuously monitor your growth areas, media preferences, and daily commitment to help you transform into the self you imagine.\n\nHow can I help you accelerate your journey today? Feel free to ask a question or **upload an image** of your notes, schedule, or code to analyze!`,
+      text: `Hello ${user?.name ? user.name.split(" ")[0] : "Growth Aspirant"}! 👋 I am your **UVOM AI Curator**.\n\nI continuously monitor your growth areas, media preferences, and daily commitment to help you transform into the self you imagine.\n\nHow can I help you accelerate your journey today? Feel free to ask a question or **upload an image** of your notes, schedule, or code to analyze!`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
+
+  useEffect(() => {
+    if (topicParam) {
+      const nodeContextMsg: ChatMessage = {
+        id: `node-ctx-${Date.now()}`,
+        sender: "ai",
+        text: `🎯 **Node Context Activated: ${topicParam}**\n\nI have loaded your complete growth history and telemetry for **${topicParam}**:\n- **Current Mastery**: ${masteryParam}%\n- **Node State**: ${stateParam}\n- **Time Invested**: ${timeParam} hours\n\nHow would you like to accelerate your mastery on **${topicParam}** today? We can design a custom practice routine, analyze complex concepts, or unblock dependencies!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        suggestedActions: [
+          `How do I reach 100% mastery in ${topicParam}?`,
+          `Give me a 15-minute practice session for ${topicParam}`,
+          `What are key mental models for ${topicParam}?`,
+        ],
+      };
+      setMessages([nodeContextMsg]);
+    }
+  }, [topicParam, stateParam, masteryParam, timeParam]);
 
   const [inputPrompt, setInputPrompt] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -246,7 +270,7 @@ export const AIChatPage: React.FC = () => {
               </div>
               <div className="rounded-3xl rounded-tl-xs p-3.5 bg-zinc-900/80 text-zinc-400 text-xs flex items-center gap-2">
                 <RefreshCw size={14} className="animate-spin text-purple-400" />
-                PACER AI Curator is analyzing and formulating response...
+                UVOM AI Curator is analyzing and formulating response...
               </div>
             </div>
           )}

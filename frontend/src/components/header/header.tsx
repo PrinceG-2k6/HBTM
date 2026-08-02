@@ -60,10 +60,10 @@ export const Header: React.FC = () => {
             to={isAuthenticated ? "/dashboard" : "/landing"}
             className="flex items-center gap-2 text-white tracking-wider text-sm hover:opacity-90 transition-opacity shrink-0"
           >
-            <div className="w-7 h-7 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-xs shadow-md shadow-amber-400/20">
-              P
+            <div className="w-7 h-7 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-xs shadow-md shadow-amber-400/20 font-bold">
+              U
             </div>
-            <span className="hidden sm:inline-block">PACER AI</span>
+            <span className="hidden sm:inline-block font-mono font-bold">UVOM AI</span>
           </Link>
 
           {/* Desktop Center Navigation Links */}

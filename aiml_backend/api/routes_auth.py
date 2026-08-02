@@ -54,8 +54,9 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     import json
     onboarding_str = json.dumps(req.onboarding) if req.onboarding else None
     
+    new_user_id = str(uuid.uuid4())
     new_user = User(
-        id=str(uuid.uuid4()),
+        id=new_user_id,
         name=req.name,
         email=req.email,
         hashed_password=hashed_pw,
@@ -65,6 +66,17 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
     db.add(new_user)
     await db.commit()
+    
+    # Pre-populate exact skill nodes in DB matching imagineSelf selections
+    if req.onboarding and "imagineSelf" in req.onboarding:
+        from tools.db_tools import create_user_skill
+        skills_to_add = req.onboarding["imagineSelf"]
+        if not skills_to_add:
+            skills_to_add = ["System Architecture", "Stoicism", "Deep Focus & Flow"]
+        for skill_name in skills_to_add:
+            await create_user_skill(db, new_user_id, skill_name, 0.0)
+        await db.commit()
+        
     await db.refresh(new_user)
     
     token = create_access_token({"sub": new_user.id})

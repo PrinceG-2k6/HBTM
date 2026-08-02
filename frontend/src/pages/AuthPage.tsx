@@ -284,10 +284,10 @@ export const AuthPage: React.FC<{ initialTab?: "signin" | "signup" }> = ({ initi
                 <Sparkles size={22} className="text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-wider uppercase text-white">
-                  PACER <span className="text-purple-400">AI</span>
+                <h1 className="text-xl font-bold tracking-wider uppercase text-white font-mono">
+                  UVOM <span className="text-purple-400">AI</span>
                 </h1>
-                <p className="text-zinc-400">Human Potential Curation Platform</p>
+                <p className="text-zinc-400">Upgraded Version of Me</p>
               </div>
             </div>
           </div>

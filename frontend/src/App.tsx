@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import Header from "./components/header/header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { LandingPage } from "./pages/LandingPage";
 import { SignInPage } from "./pages/SignInPage";
@@ -11,10 +10,11 @@ import { SandboxPage } from "./pages/SandboxPage";
 import { ReviewsPage } from "./pages/ReviewsPage";
 import { AIChatPage } from "./pages/AIChatPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ShopPage } from "./pages/ShopPage";
 import { WindowWidthProvider } from "./contexts/windowWidth.context";
 import { AuthProvider } from "./contexts/auth.context";
 
-const APP_PAGES = ["/dashboard", "/curation", "/sandbox", "/reviews", "/ai-chat", "/profile"];
+const APP_PAGES = ["/dashboard", "/curation", "/sandbox", "/reviews", "/ai-chat", "/profile", "/shop"];
 
 const ScrollToTop = () => {
   const location = useLocation();
@@ -31,9 +31,6 @@ const AppContent = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#141416] text-zinc-100 font-sans antialiased">
-      {/* Show top header only on landing pages (not auth pages) */}
-      {!isAppPage && !isAuthPage && <Header />}
-
       {/* Sidebar for app pages */}
       {isAppPage && <Sidebar />}
 
@@ -43,7 +40,7 @@ const AppContent = () => {
             ? "md:ml-[220px] ml-0 pt-18 md:pt-6 p-4 sm:p-6 lg:p-8 pb-24 md:pb-12 min-h-screen transition-all duration-300"
             : isAuthPage
               ? "min-h-screen"
-              : "px-3 sm:px-6 pt-24 pb-12"
+              : "min-h-screen w-full"
         }
         id="main-content"
       >
@@ -59,6 +56,7 @@ const AppContent = () => {
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/ai-chat" element={<AIChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/shop" element={<ShopPage />} />
         </Routes>
       </main>
     </div>

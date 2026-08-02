@@ -156,10 +156,10 @@ export const AuthVisual3D: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full h-full min-h-[650px] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-950 via-purple-950/20 to-zinc-950 shadow-2xl flex items-center justify-center">
+    <div className="w-full h-full min-h-[650px] relative flex items-center justify-center">
       {/* Dynamic Ambient Background Blur */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-35 blur-[140px] pointer-events-none"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full opacity-30 blur-[150px] pointer-events-none"
         style={{ background: "radial-gradient(circle, #a855f7 0%, #ec4899 50%, transparent 100%)" }}
       />
 

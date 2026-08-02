@@ -52,7 +52,7 @@ export const ReflectionModal: React.FC<Props> = ({ open, lessonTitle, onClose })
               <Sparkles size={16} className="text-amber-400" />
               Session Reflection
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">Help PACER learn how your mind synthesizes ideas</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Help UVOM learn how your mind synthesizes ideas</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer">
             <X size={18} />
@@ -64,7 +64,7 @@ export const ReflectionModal: React.FC<Props> = ({ open, lessonTitle, onClose })
             <div className="w-14 h-14 rounded-full bg-emerald-950 border border-emerald-800 flex items-center justify-center">
               <Check size={28} className="text-emerald-400" />
             </div>
-            <p className="text-sm text-emerald-300">Reflection saved! PACER vector index updated.</p>
+            <p className="text-sm text-emerald-300">Reflection saved! UVOM vector index updated.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

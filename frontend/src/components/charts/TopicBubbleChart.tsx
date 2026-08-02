@@ -3,7 +3,9 @@ import type { TopicProgress, NodeState } from "../../api";
 
 interface Props {
   topics: TopicProgress[];
+  selectedTopicId?: string;
   onTopicHover?: (topicName: string | null) => void;
+  onTopicSelect?: (topic: TopicProgress) => void;
 }
 
 interface BubbleNode {
@@ -36,10 +38,16 @@ function clamp(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));
 }
 
-/** Multi-dimensional physics-based bubble graph */
-export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
+/** Multi-dimensional physics-based interactive bubble graph */
+export const TopicBubbleChart: React.FC<Props> = ({
+  topics,
+  selectedTopicId,
+  onTopicHover,
+  onTopicSelect,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tooltip, setTooltip] = useState<{ topic: TopicProgress; x: number; y: number } | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const nodesRef = useRef<BubbleNode[]>([]);
   const animFrameRef = useRef<number>(0);
   const [canvasSize, setCanvasSize] = useState({ w: 700, h: 420 });
@@ -48,7 +56,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
   // Build a map from id → node for drawing connection lines
   const idToNodeRef = useRef<Map<string, BubbleNode>>(new Map());
 
-  // Initialise bubble nodes once
+  // Update or sync bubble nodes when topics list changes or updates
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -56,14 +64,27 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
     const h = canvas.offsetHeight || 420;
     setCanvasSize({ w, h });
 
-    const MIN_R = 26;
-    const MAX_R = 62;
+    const MIN_R = 28;
+    const MAX_R = 64;
     const MAX_TIME = Math.max(...topics.map((t) => t.timeInvested), 1);
 
+    const existingMap = new Map<string, BubbleNode>();
+    nodesRef.current.forEach((n) => existingMap.set(n.topic.id, n));
+
     nodesRef.current = topics.map((t) => {
-      // Node SIZE = time invested (normalized)
       const timeFrac = t.timeInvested / MAX_TIME;
       const r = MIN_R + timeFrac * (MAX_R - MIN_R);
+      const existing = existingMap.get(t.id);
+
+      if (existing) {
+        // Keep smooth position and velocity while updating topic state & radius
+        return {
+          ...existing,
+          topic: t,
+          r,
+        };
+      }
+
       return {
         topic: t,
         x: Math.random() * (w - 2 * r) + r,
@@ -74,7 +95,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         glowPhase: Math.random() * Math.PI * 2,
       };
     });
-    // Build id→node map
+
     const map = new Map<string, BubbleNode>();
     nodesRef.current.forEach((n) => map.set(n.topic.id, n));
     idToNodeRef.current = map;
@@ -101,7 +122,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
 
       const nodes = nodesRef.current;
 
-      // Physics
+      // Physics calculation
       nodes.forEach((n) => {
         n.vx += (cx - n.x) * 0.0015;
         n.vy += (cy - n.y) * 0.0015;
@@ -109,9 +130,9 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         n.vy *= 0.96;
         n.x += n.vx;
         n.y += n.vy;
-        n.x = clamp(n.x, n.r + 4, W - n.r - 4);
-        n.y = clamp(n.y, n.r + 4, H - n.r - 4);
-        n.glowPhase += 0.025;
+        n.x = clamp(n.x, n.r + 6, W - n.r - 6);
+        n.y = clamp(n.y, n.r + 6, H - n.r - 6);
+        n.glowPhase += 0.03;
       });
 
       // Collision resolution
@@ -122,7 +143,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
           const dx = b.x - a.x;
           const dy = b.y - a.y;
           const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-          const minDist = a.r + b.r + 6;
+          const minDist = a.r + b.r + 8;
           if (dist < minDist) {
             const overlap = (minDist - dist) / 2;
             const nx = (dx / dist) * overlap;
@@ -133,7 +154,7 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         }
       }
 
-      // ── Draw dependency connection lines ──────────────────────
+      // ── 1. Draw dependency connection lines ──────────────────────
       ctx.save();
       nodes.forEach((n) => {
         const deps = n.topic.dependencies ?? [];
@@ -143,8 +164,8 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
           ctx.beginPath();
           ctx.moveTo(n.x, n.y);
           ctx.lineTo(target.x, target.y);
-          ctx.strokeStyle = "#ffffff12";
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = "#ffffff18";
+          ctx.lineWidth = 1.2;
           ctx.setLineDash([4, 6]);
           ctx.stroke();
           ctx.setLineDash([]);
@@ -152,22 +173,37 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
       });
       ctx.restore();
 
-      // ── Draw nodes ────────────────────────────────────────────
+      // ── 2. Draw nodes ────────────────────────────────────────────
       nodes.forEach((n) => {
         const colors = STATE_COLORS[n.topic.nodeState] ?? STATE_COLORS["Learning"];
-        const pct = n.topic.completedPercent;
+        const pct = clamp(n.topic.completedPercent, 0, 100);
         const conf = n.topic.confidenceLevel;
         const isRecent = n.topic.recentlyActive;
         const isIdentity = n.topic.isIdentityLevel;
+        const isSelected = selectedTopicId === n.topic.id;
+
+        // Selected active glow halo ring
+        if (isSelected) {
+          const glowAlpha = 0.6 + 0.4 * Math.sin(n.glowPhase * 2);
+          ctx.save();
+          ctx.shadowColor = "#a855f7";
+          ctx.shadowBlur = 24 * glowAlpha;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r + 7, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(168, 85, 247, ${glowAlpha})`;
+          ctx.lineWidth = 3.5;
+          ctx.stroke();
+          ctx.restore();
+        }
 
         // Glow for recently active nodes
-        if (isRecent) {
+        if (isRecent && !isSelected) {
           const glowAlpha = 0.4 + 0.3 * Math.sin(n.glowPhase);
           ctx.save();
           ctx.shadowColor = colors.stroke;
           ctx.shadowBlur = 18 * glowAlpha;
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r + 2, 0, Math.PI * 2);
+          ctx.arc(n.x, n.y, n.r + 3, 0, Math.PI * 2);
           ctx.strokeStyle = colors.stroke + "44";
           ctx.lineWidth = 3;
           ctx.stroke();
@@ -177,8 +213,8 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         // Identity-level outer ring
         if (isIdentity) {
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r + 6, 0, Math.PI * 2);
-          ctx.strokeStyle = IDENTITY_RING + "55";
+          ctx.arc(n.x, n.y, n.r + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = IDENTITY_RING + "66";
           ctx.lineWidth = 1.5;
           ctx.setLineDash([3, 4]);
           ctx.stroke();
@@ -199,29 +235,29 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
           ctx.moveTo(n.x, n.y);
           ctx.arc(n.x, n.y, n.r, startAngle, endAngle);
           ctx.closePath();
-          ctx.fillStyle = colors.stroke + "30";
+          ctx.fillStyle = colors.stroke + "35";
           ctx.fill();
 
           // Progress arc ring
           ctx.beginPath();
           ctx.arc(n.x, n.y, n.r - 2.5, startAngle, endAngle);
           ctx.strokeStyle = colors.stroke;
-          ctx.lineWidth = 2.5;
+          ctx.lineWidth = 3;
           ctx.stroke();
         }
 
         // Border — width = confidence level
-        const borderW = 1 + (conf / 100) * 2.5;
+        const borderW = 1.5 + (conf / 100) * 2.5;
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.strokeStyle = colors.stroke + "cc";
+        ctx.strokeStyle = isSelected ? "#a855f7" : colors.stroke + "dd";
         ctx.lineWidth = borderW;
         ctx.stroke();
 
         // Label
-        ctx.fillStyle = colors.text;
-        const fontSize = n.r > 44 ? 11 : 9;
-        ctx.font = `300 ${fontSize}px 'Outfit', sans-serif`;
+        ctx.fillStyle = isSelected ? "#ffffff" : colors.text;
+        const fontSize = n.r > 44 ? 12 : 10;
+        ctx.font = `${isSelected ? "600" : "400"} ${fontSize}px 'Outfit', sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
@@ -238,8 +274,8 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         }
 
         // Percent label
-        ctx.font = `300 ${fontSize - 1}px 'Outfit', sans-serif`;
-        ctx.fillStyle = colors.text + "aa";
+        ctx.font = `500 ${fontSize - 1}px 'Outfit', sans-serif`;
+        ctx.fillStyle = isSelected ? "#f3e8ff" : colors.text + "cc";
         ctx.fillText(`${pct}%`, n.x, n.y + (n.r > 40 ? 10 : 8));
       });
 
@@ -248,9 +284,9 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
 
     animFrameRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animFrameRef.current);
-  }, [canvasSize]);
+  }, [canvasSize, selectedTopicId]);
 
-  // Mouse hover for tooltip
+  // Mouse move handler for tooltip & hover feedback
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -267,8 +303,36 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         break;
       }
     }
-    setTooltip(found ? { topic: found.topic, x: mx, y: my } : null);
-    onTopicHover?.(found ? found.topic.name : null);
+
+    if (found) {
+      canvas.style.cursor = "pointer";
+      setHoveredNodeId(found.topic.id);
+      setTooltip({ topic: found.topic, x: mx, y: my });
+      onTopicHover?.(found.topic.name);
+    } else {
+      canvas.style.cursor = "default";
+      setHoveredNodeId(null);
+      setTooltip(null);
+      onTopicHover?.(null);
+    }
+  };
+
+  // Canvas click handler for node selection
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    for (const n of nodesRef.current) {
+      const dx = mx - n.x;
+      const dy = my - n.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= n.r) {
+        onTopicSelect?.(n.topic);
+        break;
+      }
+    }
   };
 
   const stateColor = (state: NodeState) => STATE_COLORS[state]?.stroke ?? "#888";
@@ -279,37 +343,50 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
         ref={canvasRef}
         width={canvasSize.w}
         height={canvasSize.h}
-        className="w-full rounded-2xl cursor-crosshair"
-        style={{ height: 380 }}
+        className="w-full rounded-2xl border border-zinc-800/80 bg-zinc-950/70 shadow-2xl transition-all"
+        style={{ height: 400 }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => { setTooltip(null); onTopicHover?.(null); }}
+        onClick={handleCanvasClick}
+        onMouseLeave={() => {
+          setTooltip(null);
+          setHoveredNodeId(null);
+          onTopicHover?.(null);
+        }}
       />
 
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="absolute pointer-events-none z-20 rounded-2xl shadow-2xl border border-zinc-700/60 bg-zinc-950/95 backdrop-blur-xl px-4 py-3 text-xs"
-          style={{ left: tooltip.x + 14, top: Math.max(0, tooltip.y - 10), minWidth: 190 }}
+          className="absolute pointer-events-none z-30 rounded-2xl shadow-2xl border border-zinc-700/80 bg-zinc-950/95 backdrop-blur-2xl px-4 py-3 text-xs"
+          style={{ left: Math.min(tooltip.x + 14, canvasSize.w - 220), top: Math.max(0, tooltip.y - 10), minWidth: 200 }}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ background: stateColor(tooltip.topic.nodeState) }}
-            />
-            <span className="text-zinc-100 text-sm">{tooltip.topic.name}</span>
+          <div className="flex items-center justify-between gap-2 mb-2 border-b border-zinc-800 pb-1.5">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2.5 h-2.5 rounded-full animate-pulse"
+                style={{ background: stateColor(tooltip.topic.nodeState) }}
+              />
+              <span className="text-zinc-100 font-semibold text-sm">{tooltip.topic.name}</span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+              Click to inspect
+            </span>
           </div>
+
           <div className="flex flex-col gap-1.5 text-zinc-400">
             <div className="flex justify-between">
               <span>State</span>
-              <span style={{ color: stateColor(tooltip.topic.nodeState) }}>{tooltip.topic.nodeState}</span>
+              <span className="font-semibold" style={{ color: stateColor(tooltip.topic.nodeState) }}>
+                {tooltip.topic.nodeState}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Category</span>
               <span className="text-zinc-300">{tooltip.topic.category}</span>
             </div>
             <div className="flex justify-between">
-              <span>Progress</span>
-              <span className="text-zinc-300">{tooltip.topic.completedItems}/{tooltip.topic.totalItems} items ({tooltip.topic.completedPercent}%)</span>
+              <span>Mastery</span>
+              <span className="text-emerald-400 font-mono font-bold">{tooltip.topic.completedPercent}%</span>
             </div>
             <div className="flex justify-between">
               <span>Time invested</span>
@@ -320,47 +397,33 @@ export const TopicBubbleChart: React.FC<Props> = ({ topics, onTopicHover }) => {
               <span className="text-zinc-300">{tooltip.topic.confidenceLevel}%</span>
             </div>
             {tooltip.topic.isIdentityLevel && (
-              <div className="mt-1 text-purple-400 text-xs">Identity-level aspiration</div>
+              <div className="mt-1 text-purple-400 text-[11px] font-medium flex items-center gap-1">
+                <span>★</span> Identity-level aspiration node
+              </div>
             )}
           </div>
-          <div className="w-full bg-zinc-800 rounded-full h-1 mt-2.5">
+          <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
             <div
-              className="h-1 rounded-full"
+              className="h-full rounded-full transition-all duration-300"
               style={{ width: `${tooltip.topic.completedPercent}%`, background: stateColor(tooltip.topic.nodeState) }}
             />
           </div>
         </div>
       )}
 
-      {/* Legend — state colors */}
-      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 px-1">
-        {(Object.keys(STATE_COLORS) as NodeState[]).map((state) => (
-          <div key={state} className="flex items-center gap-1.5 text-xs text-zinc-500">
-            <div className="w-2 h-2 rounded-full" style={{ background: STATE_COLORS[state].stroke }} />
-            <span>{state}</span>
-          </div>
-        ))}
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500 ml-2">
-          <div className="w-2 h-2 rounded-full border border-dashed border-purple-400" style={{ background: "transparent" }} />
-          <span>Identity aspiration</span>
+      {/* Legend & Instructions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 px-1">
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {(Object.keys(STATE_COLORS) as NodeState[]).slice(0, 6).map((state) => (
+            <div key={state} className="flex items-center gap-1.5 text-xs text-zinc-400">
+              <div className="w-2 h-2 rounded-full" style={{ background: STATE_COLORS[state].stroke }} />
+              <span>{state}</span>
+            </div>
+          ))}
         </div>
-      </div>
-
-      {/* Dimension key */}
-      <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 px-1">
-        {[
-          { label: "Node size", desc: "Time invested" },
-          { label: "Fill wedge", desc: "Task completion %" },
-          { label: "Border width", desc: "Confidence level" },
-          { label: "Glow pulse", desc: "Recently active" },
-          { label: "Dashed ring", desc: "Identity aspiration" },
-          { label: "Dashed lines", desc: "Skill dependencies" },
-        ].map((d) => (
-          <div key={d.label} className="flex flex-col text-xs">
-            <span className="text-zinc-300">{d.label}</span>
-            <span className="text-zinc-600">{d.desc}</span>
-          </div>
-        ))}
+        <span className="text-xs text-amber-400 font-mono bg-amber-950/40 px-3 py-1 rounded-full border border-amber-800/40">
+          💡 Click node to inspect & boost progress live
+        </span>
       </div>
     </div>
   );
